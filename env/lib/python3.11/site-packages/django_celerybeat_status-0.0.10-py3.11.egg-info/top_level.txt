@@ -1,0 +1,2 @@
+celerybeat_status
+celerybeat_status/tests

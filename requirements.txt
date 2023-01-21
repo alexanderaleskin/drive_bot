@@ -11,8 +11,8 @@ django-environ==0.4.5
 django-json-widget==1.1.1
 ipython==8.8.0
 kombu==5.1.0
+uwsgi==2.0.20
 psycopg2-binary==2.9.3
 redis==3.3.11
-uwsgi==2.0.20
 python-telegram-bot==13.14
 telegram_django_bot==0.0.11
