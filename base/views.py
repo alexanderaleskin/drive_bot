@@ -1,6 +1,5 @@
 import copy
 
-from django.conf import settings
 from telegram_django_bot.models import MESSAGE_FORMAT
 from telegram_django_bot.routing import telega_reverse
 from telegram_django_bot.telegram_lib_redefinition import InlineKeyboardButtonDJ
@@ -25,12 +24,11 @@ def start(bot: TG_DJ_Bot, update: Update, user: User):
 
     message = (
         f'Привет {user.first_name or user.telegram_username or user.id}!\n'
-        'Я работаю все ок!\n'
     )
     buttons = [
         [
             InlineKeyboardButtonDJ(
-                text=_('🧩 BotMenu'),
+                text=_('🧩 Старт'),
                 callback_data=FolderViewSet(
                     telega_reverse('base:FolderViewSet')
                 ).gm_callback_data('show_list', root_folder.pk)
@@ -46,6 +44,19 @@ class FolderViewSet(TelegaViewSet):
     queryset = Folder.objects.all()
     viewset_name = 'FolderViewSet'
     updating_fields = ['name', 'file']
+    icon_format = {
+        'T': '📜',
+        'P': '📷',
+        'D': '📋',
+        'A': '🔊',
+        'V': '🎥',
+        'G': '📺',
+        'TV': '🗣',
+        'VN': '🎬',
+        'S': '🎃',
+        'L': '🗺',
+        'GM': '📽'
+    }
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -61,7 +72,7 @@ class FolderViewSet(TelegaViewSet):
             __, (mess, buttons) = super().delete(model_or_pk, is_confirmed)
             button_to_back = [
                 InlineKeyboardButtonDJ(
-                    text=_('🔙 Return to list'),
+                    text=_('🔙 Вернуться в папку'),
                     callback_data=self.gm_callback_data(
                         'show_list',
                         model.parent.id
@@ -101,7 +112,7 @@ class FolderViewSet(TelegaViewSet):
     def show_list(self, folder_id, page=0, per_page=10, columns=1):
         """show list items"""
 
-        current_folder = Folder.objects.get(
+        current_folder = self.get_queryset().get(
             user_id=self.user.id,
             pk=folder_id
         )
@@ -124,7 +135,6 @@ class FolderViewSet(TelegaViewSet):
         buttons = []
         page = int(page)
         
-        count_models = count_file + count_subfolder
         first_this_page = page * per_page * columns
         first_next_page = (page + 1) * per_page * columns
         
@@ -134,15 +144,17 @@ class FolderViewSet(TelegaViewSet):
             [first_this_page: first_next_page]
         ) + file_queryset
 
+        count_models = len(models)
+
         prev_page_button = InlineKeyboardButtonDJ(
-            text=f'◀️️️ ',
+            text=_(f'<'),
             callback_data=self.generate_message_callback_data(
                 self.command_routings['command_routing_show_list'],
                 folder_id, str(page - 1)
             )
         )
         next_page_button = InlineKeyboardButtonDJ(
-            text=f'▶️️ ',
+            text=_(f'>'),
             callback_data=self.generate_message_callback_data(
                 self.command_routings['command_routing_show_list'],
                 folder_id, str(page + 1),
@@ -161,9 +173,7 @@ class FolderViewSet(TelegaViewSet):
                     {len(models)}, {first_this_page}, {first_next_page}')
 
         if current_folder.parent:
-            buttons += [
-                self.generate_show_list_back_button(current_folder.parent)
-            ]
+            buttons += self.generate_show_list_back_button(current_folder)
 
         buttons += self.generate_show_list_static_button(current_folder)
 
@@ -176,10 +186,15 @@ class FolderViewSet(TelegaViewSet):
             )
             for it_m, model in enumerate(models, page * per_page * columns + 1):
                 buttons += [
-                    self.get_show_elem_button(model, folder_id)
+                    self.get_show_elem_button(model)
                 ]
         else:
-            mess = _('There is nothing to show.')
+            mess += (
+                f'Folder: {current_folder.name}\n'
+                f'Subfolder: {count_subfolder}\n'
+                f'Files: {count_file}\n'
+                f'Date time change: {current_folder.datetime_change}'
+            )
 
         return self.CHAT_ACTION_MESSAGE, (mess, buttons)
 
@@ -187,7 +202,7 @@ class FolderViewSet(TelegaViewSet):
         buttons = [
             [
                 InlineKeyboardButtonDJ(
-                    text=_('➕ Add folder'),
+                    text=_('➕ Добавить папку'),
                     callback_data=self.gm_callback_data(
                         'create', 'parent', model.id
                     )
@@ -195,7 +210,7 @@ class FolderViewSet(TelegaViewSet):
             ],
             [
                 InlineKeyboardButtonDJ(
-                    text=_('➕ Add file'),
+                    text=_('➕ Добавить файл'),
                     callback_data=FileViewSet(
                         telega_reverse('base:FileViewSet')
                     ).gm_callback_data('create', 'folder', model.id)
@@ -226,7 +241,7 @@ class FolderViewSet(TelegaViewSet):
             buttons = [
                 [
                     InlineKeyboardButtonDJ(
-                        text=_('📝 name'),
+                        text=_('📝 Название'),
                         callback_data=self.gm_callback_data(
                             'change', model.id, 'name'
                         )
@@ -234,7 +249,7 @@ class FolderViewSet(TelegaViewSet):
                 ],
                 [
                     InlineKeyboardButtonDJ(
-                        text=_('🔙 Back'),
+                        text=_('🔙 Назад'),
                         callback_data=self.gm_callback_data(
                             'show_list', model.pk
                         )
@@ -246,19 +261,27 @@ class FolderViewSet(TelegaViewSet):
         else:
             return self.generate_message_no_elem(model_or_pk)
 
-    def generate_show_list_back_button(self, model_parent):
-        button = [
-            InlineKeyboardButtonDJ(
-                text=_('🔙 Back'),
-                callback_data=self.gm_callback_data(
-                    'show_list', model_parent.pk
+    def generate_show_list_back_button(self, model):
+        buttons = [
+            [
+                InlineKeyboardButtonDJ(
+                    text=_('🔙 Назад'),
+                    callback_data=self.gm_callback_data(
+                        'show_list', model.parent.pk
+                    )
                 )
-            )
+            ],
+            [
+                InlineKeyboardButtonDJ(
+                    text=_('❌ Удалить'),
+                    callback_data=self.gm_callback_data('delete', model.pk)
+                ),
+            ]
         ]
 
-        return button
+        return buttons
 
-    def get_show_elem_button(self, model, folder_id):
+    def get_show_elem_button(self, model):
 
         if isinstance(model, Folder):
             button = [
@@ -277,7 +300,7 @@ class FolderViewSet(TelegaViewSet):
                     text=self.get_model_name(model),
                     callback_data=FileViewSet(
                         telega_reverse('base:FileViewSet')
-                    ).gm_callback_data('show_elem', folder_id, model.pk)
+                    ).gm_callback_data('show_elem', model.pk)
                 )
             ]
 
@@ -288,7 +311,10 @@ class FolderViewSet(TelegaViewSet):
         if isinstance(model, Folder):
             return _(f'📁 {model.name}')
         else:
-            return _(f'📔 {model.message_format}')
+            return _(
+                f'{self.icon_format[model.message_format]} \
+                {model.message_format}'
+            )
 
     def generate_message_self_variant(
         self, field_name, mess='', func_response='create',instance_id=None):
@@ -298,7 +324,7 @@ class FolderViewSet(TelegaViewSet):
 
         if field_name == 'name':
             mess += _(
-                'Напишите имя новой папки'
+                'Введите имя новой папки 📁'
             )
         else:
             mess = message
@@ -405,27 +431,6 @@ class FileViewSet(TelegaViewSet):
 
         return result
 
-    def show_list(self, page=0, per_page=10, columns=1):
-        __, (mess, buttons) = super().show_list(page, per_page, columns)
-        buttons += [
-            [
-                InlineKeyboardButtonDJ(
-                    text=_('➕ Add file'),
-                    callback_data=self.gm_callback_data('create')
-                )
-            ],
-            [
-                InlineKeyboardButtonDJ(
-                    text=_('🔙 Back'),
-                    callback_data=FolderViewSet(
-                        telega_reverse('base:FolderViewSet')
-                    ).gm_callback_data('show_elem', self.foreign_filters[0])
-                )
-            ],
-        ]
-
-        return self.CHAT_ACTION_MESSAGE, (mess, buttons)
-
     def generate_message_self_variant(
         self, field_name, mess='', func_response='create', instance_id=None):
 
@@ -435,22 +440,44 @@ class FileViewSet(TelegaViewSet):
 
         if field_name == 'media_id':
             mess += _(
-                'Пожалуйста отправьте файл 👇'
+                'Пожалуйста отправьте файл 🗄'
             )
         elif field_name == 'text':
             mess += _(
-                'Введите сообщение'
+                'Введите заметку 💬'
             )
         else:
             mess = message
 
         return self.CHAT_ACTION_MESSAGE, (mess, buttons)
 
+
+    def delete(self, model_or_pk, is_confirmed=False):
+        model = self._get_elem(model_or_pk)
+
+        if model:
+            __, (mess, buttons) = super().delete(model_or_pk, is_confirmed)
+            button_to_back = [
+                InlineKeyboardButtonDJ(
+                    text=_('🔙 Вернуться в папку'),
+                    callback_data=FolderViewSet(
+                        telega_reverse('base:FolderViewSet')
+                    ).gm_callback_data('show_list', model.folder.pk)
+                )
+            ]
+
+            buttons = buttons[:-1]
+            buttons.append(button_to_back)
+
+            return self.CHAT_ACTION_MESSAGE, (mess, buttons)
+        else:
+            return self.generate_message_no_elem(model_or_pk)
+
     def generate_elem_buttons(self, model, elem_per_raw=2):
         buttons = [
             [
                 InlineKeyboardButtonDJ(
-                    text=_('🖼 Media'),
+                    text=_('🗄 Файл'),
                     callback_data=self.gm_callback_data(
                         'change', model.id, 'media_id'
                     )
@@ -458,7 +485,7 @@ class FileViewSet(TelegaViewSet):
             ],
             [
                 InlineKeyboardButtonDJ(
-                    text=_('📝 text'),
+                    text=_('💬 Заметка'),
                     callback_data=self.gm_callback_data(
                         'change', model.id, 'text'
                     )
@@ -466,7 +493,7 @@ class FileViewSet(TelegaViewSet):
             ],
             [
                 InlineKeyboardButtonDJ(
-                    text=_('❌ Delete'),
+                    text=_('❌ Удалить'),
                     callback_data=self.gm_callback_data(
                         'delete', model.id
                     )
@@ -474,7 +501,7 @@ class FileViewSet(TelegaViewSet):
             ],
             [
                 InlineKeyboardButtonDJ(
-                    text=_('🔙 Back'),
+                    text=_('🔙 Назад'),
                     callback_data=FolderViewSet(
                         telega_reverse('base:FolderViewSet')
                     ).gm_callback_data('show_elem', model.folder.id)
