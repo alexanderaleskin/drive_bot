@@ -121,7 +121,6 @@ class FolderViewSet(TelegaViewSet):
         else:
             initial_data = {
                 'user': self.user.id,
-                field: value
             }
 
         return self.create_or_update_helper(

@@ -10,21 +10,9 @@ class FileForm(td_forms.TelegaModelForm):
         model = File
         fields = ['media_id', 'message_format', 'text', 'folder', 'user']
 
-    def clean(self):
-        cleaned_data = super().clean()
-        self.cleaned_data = cleaned_data
-
-        return self.cleaned_data
-
 
 class FolderForm(td_forms.TelegaModelForm):
     form_name = _("Menu folder")
-
-    def clean(self):
-        cleaned_data = super().clean()
-        self.cleaned_data = cleaned_data
-
-        return self.cleaned_data
 
     class Meta:
         model = Folder
