@@ -22,6 +22,7 @@ def start(bot: TG_DJ_Bot, update: Update, user: User):
         user_id=user.id,
         parent=None
     ).first()
+
     message = (
         f'Привет {user.first_name or user.telegram_username or user.id}!\n'
         'Я работаю все ок!\n'
@@ -32,7 +33,7 @@ def start(bot: TG_DJ_Bot, update: Update, user: User):
                 text=_('🧩 BotMenu'),
                 callback_data=FolderViewSet(
                     telega_reverse('base:FolderViewSet')
-                ).gm_callback_data('show_elem', root_folder.pk)
+                ).gm_callback_data('show_list', root_folder.pk)
             ),
         ]
     ]
@@ -54,64 +55,26 @@ class FolderViewSet(TelegaViewSet):
         )
 
     def delete(self, model_or_pk, is_confirmed=False):
-        """delete item"""
-
-        # import pdb;pdb.set_trace()
         model = self._get_elem(model_or_pk)
-        model_parent = model.parent
 
         if model:
-            buttons = []
+            __, (mess, buttons) = super().delete(model_or_pk, is_confirmed)
+            button_to_back = [
+                InlineKeyboardButtonDJ(
+                    text=_('🔙 Return to list'),
+                    callback_data=self.gm_callback_data(
+                        'show_list',
+                        model.parent.id
+                    )
+                )
+            ]
+            buttons = buttons[:-1]
+            buttons.append(button_to_back)
 
-            if self.deleting_with_confirm and not is_confirmed:
-                # just ask for confirmation
-                mess = self.show_texts_dict['confirm_deleting'] % {
-                    'viewset_name': model.name,
-                    'model_id': f'#{model.id}' or '',
-                }
-                buttons = [
-                    [InlineKeyboardButtonDJ(
-                        text=self.show_texts_dict['confirm_delete_button_text'],
-                        callback_data=self.gm_callback_data(
-                            'delete',
-                            model.id,
-                            '1'  # True
-                        )
-                    )]
-                ]
-                if 'show_elem' in self.actions:
-                    buttons += [
-                        [InlineKeyboardButtonDJ(
-                            text=_('🔙 Back'),
-                            callback_data=self.gm_callback_data(
-                                'show_elem',
-                                model.id,
-                            )
-                        )]
-                    ]
-
-            else:
-                # real deleting
-                model.delete()
-
-                mess = self.show_texts_dict['succesfully_deleted'] % {
-                    'viewset_name': model.name,
-                    'model_id': f'#{model.id}' or '',
-                }
-
-                if 'show_list' in self.actions:
-                    buttons += [
-                        [InlineKeyboardButtonDJ(
-                            text=_('🔙 Return to list'),
-                            callback_data=self.gm_callback_data(
-                                'show_elem',
-                                model_parent.id
-                            )
-                        )]
-                    ]
             return self.CHAT_ACTION_MESSAGE, (mess, buttons)
         else:
             return self.generate_message_no_elem(model_or_pk)
+
     
     def create(self, field=None, value=None):
         initial_data = {'user': self.user.id}
@@ -127,102 +90,205 @@ class FolderViewSet(TelegaViewSet):
             field, value, 'create', initial_data=initial_data
         )
 
-    def show_list(self, page=0, per_page=10, columns=1):
-        __, (mess, buttons) = super().show_list(page, per_page, columns)
-        buttons += [
-            [
-                InlineKeyboardButtonDJ(
-                    text=_('➕ Add'),
-                    callback_data=self.gm_callback_data('create',)
-                ),
-            ],
-            [
-                InlineKeyboardButtonDJ(
-                    text=_('🔙 Back'),
-                    callback_data=settings.TELEGRAM_BOT_MAIN_MENU_CALLBACK
-                )
-            ]
-        ]
-
-        return self.CHAT_ACTION_MESSAGE, (mess, buttons)
-
     def show_elem(self, model_or_pk, mess=''):
         model = self._get_elem(model_or_pk)
 
         if model:
-            if self.use_name_and_id_in_elem_showing:
-                mess += f'{model.name} #{model.pk} \n'
+            return self.show_list(model.pk)
+        else:
+            return super().show_elem(model_or_pk)
 
-            mess += self.generate_show_fields(model, full_show=True)
-            buttons = self.generate_elem_buttons(model)
-            folder_queryset = Folder.objects.filter(
-                parent_id=model.id,
-                user_id=self.user.id
+    def show_list(self, folder_id, page=0, per_page=10, columns=1):
+        """show list items"""
+
+        current_folder = Folder.objects.get(
+            user_id=self.user.id,
+            pk=folder_id
+        )
+        file_queryset = list(
+            File.objects.filter(
+                user_id=self.user.id,
+                folder_id=folder_id
             )
+        )
+        count_subfolder = len(
+            self.get_queryset().filter(
+                user_id=self.user.id,
+                parent=current_folder
+            )
+        )
+        count_file = len(file_queryset)
 
-            if folder_queryset:
-                for folder in folder_queryset:
+        # import pdb;pdb.set_trace()
+        mess = ''
+        buttons = []
+        page = int(page)
+        
+        count_models = count_file + count_subfolder
+        first_this_page = page * per_page * columns
+        first_next_page = (page + 1) * per_page * columns
+        
+        models = list(
+            self.get_queryset()
+            .filter(parent=current_folder)
+            [first_this_page: first_next_page]
+        ) + file_queryset
 
-                    button = [
-                        InlineKeyboardButtonDJ(
-                            text=_(f'Папка {folder.name}'),
-                            callback_data=self.gm_callback_data(
-                                'show_elem', folder.pk
-                            )
+        prev_page_button = InlineKeyboardButtonDJ(
+            text=f'◀️️️ ',
+            callback_data=self.generate_message_callback_data(
+                self.command_routings['command_routing_show_list'],
+                folder_id, str(page - 1)
+            )
+        )
+        next_page_button = InlineKeyboardButtonDJ(
+            text=f'▶️️ ',
+            callback_data=self.generate_message_callback_data(
+                self.command_routings['command_routing_show_list'],
+                folder_id, str(page + 1),
+            )
+        )
+
+        if len(models) < count_models:
+            if (first_this_page > 0) and (first_next_page < count_models):
+                buttons = [[prev_page_button, next_page_button]]
+            elif first_this_page == 0:
+                buttons = [[next_page_button]]
+            elif first_next_page >= count_models:
+                buttons = [[prev_page_button]]
+            else:
+                print(f'unreal situation {count_models}, \
+                    {len(models)}, {first_this_page}, {first_next_page}')
+
+        if current_folder.parent:
+            buttons += [
+                self.generate_show_list_back_button(current_folder.parent)
+            ]
+
+        buttons += self.generate_show_list_static_button(current_folder)
+
+        if len(models):
+            mess += (
+                f'Folder: {current_folder.name}\n'
+                f'Subfolder: {count_subfolder}\n'
+                f'Files: {count_file}\n'
+                f'Date time change: {current_folder.datetime_change}'
+            )
+            for it_m, model in enumerate(models, page * per_page * columns + 1):
+                buttons += [
+                    self.get_show_elem_button(model, folder_id)
+                ]
+        else:
+            mess = _('There is nothing to show.')
+
+        return self.CHAT_ACTION_MESSAGE, (mess, buttons)
+
+    def generate_show_list_static_button(self, model):
+        buttons = [
+            [
+                InlineKeyboardButtonDJ(
+                    text=_('➕ Add folder'),
+                    callback_data=self.gm_callback_data(
+                        'create', 'parent', model.id
+                    )
+                ),
+            ],
+            [
+                InlineKeyboardButtonDJ(
+                    text=_('➕ Add file'),
+                    callback_data=FileViewSet(
+                        telega_reverse('base:FileViewSet')
+                    ).gm_callback_data('create', 'folder', model.id)
+                )
+            ]
+        ]
+
+        return buttons
+
+    def show_edit_folder(self, model_or_pk, mess=''):
+        model = self._get_elem(model_or_pk)
+
+        if model:
+            count_subfolder = Folder.objects.filter(
+                user_id=self.user.id,
+                parent_id=model.pk
+            ).count()
+            count_files = File.objects.filter(
+                user_id=self.user.id,
+                folder_id=model.pk
+            )
+            mess += _(
+                f'Folder: {model.name}\n'
+                f'SubFolders: {count_subfolder}\n'
+                f'Files: {count_files}\n'
+                f'Date time change: {model.datetime_change}\n'
+            )
+            buttons = [
+                [
+                    InlineKeyboardButtonDJ(
+                        text=_('📝 name'),
+                        callback_data=self.gm_callback_data(
+                            'change', model.id, 'name'
                         )
-                    ]
-                    buttons.append(button)
+                    )
+                ],
+                [
+                    InlineKeyboardButtonDJ(
+                        text=_('🔙 Back'),
+                        callback_data=self.gm_callback_data(
+                            'show_list', model.pk
+                        )
+                    )
+                ]
+            ]
 
             return self.CHAT_ACTION_MESSAGE, (mess, buttons)
         else:
             return self.generate_message_no_elem(model_or_pk)
 
-    def generate_elem_buttons(self, model, elem_per_raw=2):
-
-        model_parent = model.parent.pk if model.parent else None
-        
-        buttons = [
-            [
-                InlineKeyboardButtonDJ(
-                    text=_('🖼 Files'),
-                    callback_data=FileViewSet(
-                        telega_reverse('base:FileViewSet')
-                    ).gm_callback_data('show_list', model.id)
-                ),
-            ],
-            [
-                InlineKeyboardButtonDJ(
-                    text=_('📝 name'),
-                    callback_data=self.gm_callback_data('change', model.id, 'name')
-                ),
-            ],
-            [
-                InlineKeyboardButtonDJ(
-                    text=_('➕ Add folder'),
-                    callback_data=self.gm_callback_data('create', 'parent', model.id)
-                ),
-            ],
+    def generate_show_list_back_button(self, model_parent):
+        button = [
+            InlineKeyboardButtonDJ(
+                text=_('🔙 Back'),
+                callback_data=self.gm_callback_data(
+                    'show_list', model_parent.pk
+                )
+            )
         ]
 
-        if model_parent:
-            button_del = [
-                InlineKeyboardButtonDJ(
-                    text=_('❌ Delete'),
-                    callback_data=self.gm_callback_data('delete', model.id)
-                ),
-            ]
-            button_back = [
-                InlineKeyboardButtonDJ(
-                    text=_('🔙 Back'),
-                    callback_data=FolderViewSet(
-                        telega_reverse('base:FolderViewSet')
-                    ).gm_callback_data('show_elem', model_parent)
-                ),
-            ]
-            buttons.append(button_del)
-            buttons.append(button_back)
+        return button
 
-        return buttons
+    def get_show_elem_button(self, model, folder_id):
+
+        if isinstance(model, Folder):
+            button = [
+                InlineKeyboardButtonDJ(
+                    text=self.get_model_name(model),
+                    callback_data=self.gm_callback_data(
+                        'show_list', model.pk
+                    )
+                )
+            ]
+
+            return button
+        else:
+            button = [
+                InlineKeyboardButtonDJ(
+                    text=self.get_model_name(model),
+                    callback_data=FileViewSet(
+                        telega_reverse('base:FileViewSet')
+                    ).gm_callback_data('show_elem', folder_id, model.pk)
+                )
+            ]
+
+            return button
+
+    def get_model_name(self, model):
+        
+        if isinstance(model, Folder):
+            return _(f'📁 {model.name}')
+        else:
+            return _(f'📔 {model.message_format}')
 
     def generate_message_self_variant(
         self, field_name, mess='', func_response='create',instance_id=None):
@@ -246,15 +312,6 @@ class FileViewSet(TelegaViewSet):
     queryset = File.objects.all()
     viewset_name = 'FileViewSet'
     updating_fields = ['text', 'media_id']
-    foreign_filter_amount = 1
-
-    def get_queryset(self):
-        queryset = super().get_queryset().filter(
-            user_id=self.user.id,
-            folder_id=self.foreign_filters[0]
-        )
-
-        return queryset
 
     def create(self, field=None, value=None):
         
@@ -263,7 +320,6 @@ class FileViewSet(TelegaViewSet):
 
         initial_data = {
             'user': self.user.id,
-            'folder': self.foreign_filters[0]
         }
 
         return self.create_or_update_helper(
