@@ -1,9 +1,16 @@
-from django.db import models
 from telegram_django_bot.models import TelegramUser
+from django.db import models
 
 
 class User(TelegramUser):
-    pass
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        Folder.objects.get_or_create(
+            user=self,
+            parent=None,
+            name='root',
+        )
 
 
 class Folder(models.Model):

@@ -18,6 +18,10 @@ from .forms import FileForm, FolderForm
 
 @handler_decor()
 def start(bot: TG_DJ_Bot, update: Update, user: User):
+    root_folder = Folder.objects.filter(
+        user_id=user.id,
+        parent=None
+    ).first()
     message = (
         f'Привет {user.first_name or user.telegram_username or user.id}!\n'
         'Я работаю все ок!\n'
@@ -28,7 +32,7 @@ def start(bot: TG_DJ_Bot, update: Update, user: User):
                 text=_('🧩 BotMenu'),
                 callback_data=FolderViewSet(
                     telega_reverse('base:FolderViewSet')
-                ).gm_callback_data('show_list')
+                ).gm_callback_data('show_elem', root_folder.pk)
             ),
         ]
     ]
@@ -48,6 +52,66 @@ class FolderViewSet(TelegaViewSet):
         return queryset.filter(
             user_id=self.user.id,
         )
+
+    def delete(self, model_or_pk, is_confirmed=False):
+        """delete item"""
+
+        # import pdb;pdb.set_trace()
+        model = self._get_elem(model_or_pk)
+        model_parent = model.parent
+
+        if model:
+            buttons = []
+
+            if self.deleting_with_confirm and not is_confirmed:
+                # just ask for confirmation
+                mess = self.show_texts_dict['confirm_deleting'] % {
+                    'viewset_name': model.name,
+                    'model_id': f'#{model.id}' or '',
+                }
+                buttons = [
+                    [InlineKeyboardButtonDJ(
+                        text=self.show_texts_dict['confirm_delete_button_text'],
+                        callback_data=self.gm_callback_data(
+                            'delete',
+                            model.id,
+                            '1'  # True
+                        )
+                    )]
+                ]
+                if 'show_elem' in self.actions:
+                    buttons += [
+                        [InlineKeyboardButtonDJ(
+                            text=_('🔙 Back'),
+                            callback_data=self.gm_callback_data(
+                                'show_elem',
+                                model.id,
+                            )
+                        )]
+                    ]
+
+            else:
+                # real deleting
+                model.delete()
+
+                mess = self.show_texts_dict['succesfully_deleted'] % {
+                    'viewset_name': model.name,
+                    'model_id': f'#{model.id}' or '',
+                }
+
+                if 'show_list' in self.actions:
+                    buttons += [
+                        [InlineKeyboardButtonDJ(
+                            text=_('🔙 Return to list'),
+                            callback_data=self.gm_callback_data(
+                                'show_elem',
+                                model_parent.id
+                            )
+                        )]
+                    ]
+            return self.CHAT_ACTION_MESSAGE, (mess, buttons)
+        else:
+            return self.generate_message_no_elem(model_or_pk)
     
     def create(self, field=None, value=None):
         initial_data = {'user': self.user.id}
@@ -70,9 +134,7 @@ class FolderViewSet(TelegaViewSet):
             [
                 InlineKeyboardButtonDJ(
                     text=_('➕ Add'),
-                    callback_data=self.gm_callback_data(
-                        'create', 'parent', ''
-                    )
+                    callback_data=self.gm_callback_data('create',)
                 ),
             ],
             [
@@ -90,7 +152,7 @@ class FolderViewSet(TelegaViewSet):
 
         if model:
             if self.use_name_and_id_in_elem_showing:
-                mess += f'{self.viewset_name} #{model.pk} \n'
+                mess += f'{model.name} #{model.pk} \n'
 
             mess += self.generate_show_fields(model, full_show=True)
             buttons = self.generate_elem_buttons(model)
@@ -117,6 +179,9 @@ class FolderViewSet(TelegaViewSet):
             return self.generate_message_no_elem(model_or_pk)
 
     def generate_elem_buttons(self, model, elem_per_raw=2):
+
+        model_parent = model.parent.pk if model.parent else None
+        
         buttons = [
             [
                 InlineKeyboardButtonDJ(
@@ -138,21 +203,25 @@ class FolderViewSet(TelegaViewSet):
                     callback_data=self.gm_callback_data('create', 'parent', model.id)
                 ),
             ],
-            [
+        ]
+
+        if model_parent:
+            button_del = [
                 InlineKeyboardButtonDJ(
                     text=_('❌ Delete'),
                     callback_data=self.gm_callback_data('delete', model.id)
                 ),
-            ],
-            [
+            ]
+            button_back = [
                 InlineKeyboardButtonDJ(
                     text=_('🔙 Back'),
                     callback_data=FolderViewSet(
                         telega_reverse('base:FolderViewSet')
-                    ).gm_callback_data('show_list')
+                    ).gm_callback_data('show_elem', model_parent)
                 ),
             ]
-        ]
+            buttons.append(button_del)
+            buttons.append(button_back)
 
         return buttons
 
@@ -313,6 +382,10 @@ class FileViewSet(TelegaViewSet):
             mess += _(
                 'Пожалуйста отправьте файл 👇'
             )
+        elif field_name == 'text':
+            mess += _(
+                'Введите сообщение'
+            )
         else:
             mess = message
 
@@ -349,7 +422,7 @@ class FileViewSet(TelegaViewSet):
                     text=_('🔙 Back'),
                     callback_data=FolderViewSet(
                         telega_reverse('base:FolderViewSet')
-                    ).gm_callback_data('show_list')
+                    ).gm_callback_data('show_elem', model.folder.id)
                 ),
             ],
         ]
@@ -376,3 +449,4 @@ class FileViewSet(TelegaViewSet):
         
         self.update.callback_query = None
 
+        return super().show_elem(model_or_pk, mess)
