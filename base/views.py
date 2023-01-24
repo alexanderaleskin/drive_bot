@@ -188,7 +188,7 @@ class FolderViewSet(TelegaViewSet):
                 f'Папка: {current_folder.name}\n'
                 f'Подпапок: {count_subfolder}\n'
                 f'Файлов: {count_file}\n'
-                f'Изменена: {current_folder.datetime_change}'
+                f'Изменена: {current_folder.datetime_change.strftime("%d.%m.%Y %H:%M")}'
             )
 
         return self.CHAT_ACTION_MESSAGE, (mess, buttons)
@@ -211,7 +211,15 @@ class FolderViewSet(TelegaViewSet):
                         telega_reverse('base:FileViewSet')
                     ).gm_callback_data('create', 'folder', model.id)
                 )
-            ]
+            ],
+            [
+                InlineKeyboardButtonDJ(
+                    text=_('📝 Название'),
+                    callback_data=self.gm_callback_data(
+                        'change', model.id, 'name'
+                    )
+                )
+            ],
         ]
 
         if model.parent:
