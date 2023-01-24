@@ -177,7 +177,7 @@ class FolderViewSet(TelegaViewSet):
                 f'Папка: {current_folder.name}\n'
                 f'Подпапок: {count_subfolder}\n'
                 f'Файлов: {count_file}\n'
-                f'Изменена: {current_folder.datetime_change}'
+                f'Изменена: {current_folder.datetime_change.strftime("%d.%m.%Y %H:%M")}'
             )
             for it_m, model in enumerate(models, page * per_page * columns + 1):
                 buttons += [
