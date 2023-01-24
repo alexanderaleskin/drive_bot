@@ -44,6 +44,10 @@ class FolderViewSet(TelegaViewSet):
     queryset = Folder.objects.all()
     viewset_name = 'FolderViewSet'
     updating_fields = ['name', 'file']
+
+    actions = ['create', 'change', 'delete', 'show_elem', 'show_list', 'edit_folder']
+    command_routing_edit_folder = 'ef'
+    
     icon_format = {
         'T': '📜',
         'P': '📷',
@@ -148,14 +152,16 @@ class FolderViewSet(TelegaViewSet):
             text=_(f'◀️️️'),
             callback_data=self.generate_message_callback_data(
                 self.command_routings['command_routing_show_list'],
-                folder_id, str(page - 1)
+                folder_id,
+                str(page - 1)
             )
         )
         next_page_button = InlineKeyboardButtonDJ(
             text=_(f'▶️️'),
             callback_data=self.generate_message_callback_data(
                 self.command_routings['command_routing_show_list'],
-                folder_id, str(page + 1),
+                folder_id,
+                str(page + 1)
             )
         )
 
@@ -200,23 +206,22 @@ class FolderViewSet(TelegaViewSet):
                 InlineKeyboardButtonDJ(
                     text=_('➕ Добавить папку'),
                     callback_data=self.gm_callback_data(
-                        'create', 'parent', model.id
+                        'create', 'parent', model.pk
                     )
                 ),
-            ],
-            [
                 InlineKeyboardButtonDJ(
                     text=_('➕ Добавить файл'),
                     callback_data=FileViewSet(
                         telega_reverse('base:FileViewSet')
-                    ).gm_callback_data('create', 'folder', model.id)
+                    ).gm_callback_data('create', 'folder', model.pk)
                 )
             ],
             [
                 InlineKeyboardButtonDJ(
-                    text=_('📝 Название'),
-                    callback_data=self.gm_callback_data(
-                        'change', model.id, 'name'
+                    text=_('📝 Редактировать папку'),
+                    callback_data=self.generate_message_callback_data(
+                        self.command_routings['command_routing_edit_folder'],
+                        model.pk
                     )
                 )
             ],
@@ -231,34 +236,28 @@ class FolderViewSet(TelegaViewSet):
                             'show_list', model.parent.pk
                         )
                     )
-                ],
-                [
-                    InlineKeyboardButtonDJ(
-                        text=_('❌ Удалить'),
-                        callback_data=self.gm_callback_data('delete', model.pk)
-                    ),
                 ]
             ]
 
         return buttons
 
-    def show_edit_folder(self, model_or_pk, mess=''):
+    def edit_folder(self, model_or_pk, mess=''):
         model = self._get_elem(model_or_pk)
 
         if model:
-            count_subfolder = Folder.objects.filter(
+            count_subfolder = self.get_queryset().filter(
                 user_id=self.user.id,
                 parent_id=model.pk
             ).count()
             count_files = File.objects.filter(
                 user_id=self.user.id,
                 folder_id=model.pk
-            )
+            ).count()
             mess += _(
-                f'Folder: {model.name}\n'
-                f'SubFolders: {count_subfolder}\n'
-                f'Files: {count_files}\n'
-                f'Date time change: {model.datetime_change}\n'
+                f'Папка: {model.name}\n'
+                f'Подпапок: {count_subfolder}\n'
+                f'Файлов: {count_files}\n'
+                f'Изменена: {model.datetime_change.strftime("%d.%m.%Y %H:%M")}\n'
             )
             buttons = [
                 [
@@ -278,10 +277,19 @@ class FolderViewSet(TelegaViewSet):
                     )
                 ]
             ]
+            if model.parent:
+                buttons += [
+                    [
+                        InlineKeyboardButtonDJ(
+                            text=_('❌ Удалить'),
+                            callback_data=self.gm_callback_data('delete', model.pk)
+                        ),
+                    ]
+                ]
 
             return self.CHAT_ACTION_MESSAGE, (mess, buttons)
         else:
-            return self.generate_message_no_elem(model_or_pk)
+            return self.generate_message_no_elem(model)
 
     def get_show_elem_button(self, model):
 
@@ -325,7 +333,7 @@ class FolderViewSet(TelegaViewSet):
 
         if field_name == 'name':
             mess += _(
-                'Введите имя новой папки 📁'
+                'Введите имя папки 📁'
             )
         else:
             mess = message

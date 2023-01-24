@@ -9,7 +9,7 @@ class User(TelegramUser):
         Folder.objects.get_or_create(
             user=self,
             parent=None,
-            name='root',
+            name='',
         )
 
 
