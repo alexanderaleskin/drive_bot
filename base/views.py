@@ -520,7 +520,7 @@ class FileViewSet(TelegaViewSet):
         model = self._get_elem(model_or_pk)
         
         if model:
-            self.send_file_from_model(model, self.user.id)        
+            self.send_file_from_model(model, self.user.id)
 
         self.update.callback_query = None
 
