@@ -32,6 +32,9 @@ class Folder(models.Model):
         auto_now=True,
     )
 
+    def get_folder(self):
+        pass
+
     def __str__(self):
         return self.name
 
@@ -66,3 +69,61 @@ class File(models.Model):
 
     class Meta:
         ordering = ['media_id']
+
+
+class ShareLink(models.Model):
+    TYPE_SHOW_WITH_COPY = 'S'
+    TYPE_SHOW_CHANGE = 'C'
+    
+    TYPES = (
+        (TYPE_SHOW_WITH_COPY, 'show with copy'),
+        (TYPE_SHOW_CHANGE, 'show and change')
+    )
+
+    folder = models.ForeignKey(
+        'Folder',
+        on_delete=models.CASCADE,
+        related_name='sharelinks',
+        null=True,
+        blank=True
+    )
+    file = models.ForeignKey(
+        'File',
+        on_delete=models.CASCADE,
+        related_name='sharelinks',
+        null=True,
+        blank=True
+    )
+    type_link = models.CharField(
+        max_length=1,
+        choices=TYPES
+    )
+    share_amount = models.IntegerField()
+    share_code = models.CharField(
+        max_length=64,
+        unique=True
+    )
+
+    def __str__(self):
+        return self.type_link
+
+    class Meta:
+        ordering = ['type_link']
+
+
+class MountInstance(models.Model):
+    mount_folder = models.ForeignKey(
+        'Folder',
+        on_delete=models.CASCADE
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE
+    )
+    share_content = models.ForeignKey(
+        'ShareLink',
+        on_delete=models.CASCADE
+    )
+    
+    class Meta:
+        ordering = ['user']

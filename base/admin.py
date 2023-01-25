@@ -1,6 +1,9 @@
 from django.contrib import admin
 
-from .models import User, File, Folder
+from .models import User, File, Folder, MountInstance, ShareLink
+
+admin.site.register(MountInstance)
+admin.site.register(ShareLink)
 
 
 @admin.register(Folder)
