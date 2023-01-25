@@ -1,4 +1,5 @@
 import copy
+from uuid import uuid4
 
 from telegram_django_bot.models import MESSAGE_FORMAT
 from telegram_django_bot.routing import telega_reverse
@@ -8,11 +9,12 @@ from telegram_django_bot.utils import handler_decor
 from telegram_django_bot.tg_dj_bot import TG_DJ_Bot
 
 from django.utils.translation import gettext as _
+from django.db.models import Q
 
 from telegram import Update
 
-from .models import User, File, Folder
-from .forms import FileForm, FolderForm
+from .models import MountInstance, ShareLink, User, File, Folder
+from .forms import FileForm, FolderForm, ShareLinkForm
 
 
 @handler_decor()
@@ -58,13 +60,6 @@ class FolderViewSet(TelegaViewSet):
         'L': '🗺',
         'GM': '📽'
     }
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-
-        return queryset.filter(
-            user_id=self.user.id,
-        )
 
     def delete(self, model_or_pk, is_confirmed=False):
         model = self._get_elem(model_or_pk)
@@ -117,16 +112,19 @@ class FolderViewSet(TelegaViewSet):
                 user_id=self.user.id,
                 parent_id=model.pk
             ).count()
+            
             count_files = File.objects.filter(
                 user_id=self.user.id,
                 folder_id=model.pk
             ).count()
+            
             mess += _(
                 f'Папка: {model.name}\n'
                 f'Подпапок: {count_subfolder}\n'
                 f'Файлов: {count_files}\n'
                 f'Изменена: {model.datetime_change.strftime("%d.%m.%Y %H:%M")}\n'
             )
+            
             buttons = [
                 [
                     InlineKeyboardButtonDJ(
@@ -134,6 +132,22 @@ class FolderViewSet(TelegaViewSet):
                         callback_data=self.gm_callback_data(
                             'change', model.pk, 'name'
                         )
+                    )
+                ],
+                [
+                    InlineKeyboardButtonDJ(
+                        text=_('Создать ShareLinks'),
+                        callback_data=ShareLinkViewSet(
+                            telega_reverse('base:ShareLinkViewSet')
+                        ).gm_callback_data('create', 'folder', model.pk)
+                    ),
+                ],
+                [
+                    InlineKeyboardButtonDJ(
+                        text=_('Список ShareLink'),
+                        callback_data=ShareLinkViewSet(
+                            telega_reverse('base:ShareLinkViewSet')
+                        ).gm_callback_data('show_list')
                     )
                 ],
                 [
@@ -163,24 +177,27 @@ class FolderViewSet(TelegaViewSet):
         """show list items"""
 
         current_folder = self.get_queryset().get(
-            user_id=self.user.id,
             pk=folder_id
         )
         file_queryset = list(
             File.objects.filter(
-                user_id=self.user.id,
                 folder_id=folder_id
             )
         )
         subfolder_queryset = list(
             self.get_queryset().filter(
-                user_id=self.user.id,
                 parent_id=folder_id
             )
         )
+        mounts_instance = self.get_mounts_instance(folder_id)
+        share_queryset = self.generate_share_queryset(mounts_instance) 
+
+        if current_folder in share_queryset:
+            share_queryset.remove(current_folder)
 
         count_subfolder = len(subfolder_queryset)
         count_file = len(file_queryset)
+        count_share = len(share_queryset)
 
         # import pdb;pdb.set_trace()
         mess = ''
@@ -190,9 +207,9 @@ class FolderViewSet(TelegaViewSet):
         first_this_page = page * per_page * columns
         first_next_page = (page + 1) * per_page * columns
 
-        models = (subfolder_queryset + file_queryset)[first_this_page: first_next_page]
+        models = (subfolder_queryset + file_queryset + share_queryset)[first_this_page: first_next_page]
 
-        count_models = count_subfolder + count_file
+        count_models = count_subfolder + count_file + count_share
 
         prev_page_button = InlineKeyboardButtonDJ(
             text=_(f'◀️️️'),
@@ -229,6 +246,7 @@ class FolderViewSet(TelegaViewSet):
                 f'Папка: {current_folder.name}\n'
                 f'Подпапок: {count_subfolder}\n'
                 f'Файлов: {count_file}\n'
+                f'Добавленных файлов: {count_share}\n'
                 f'Изменена: {current_folder.datetime_change.strftime("%d.%m.%Y %H:%M")}'
             )
             for it_m, model in enumerate(models, page * per_page * columns + 1):
@@ -240,12 +258,42 @@ class FolderViewSet(TelegaViewSet):
                 f'Папка: {current_folder.name}\n'
                 f'Подпапок: {count_subfolder}\n'
                 f'Файлов: {count_file}\n'
+                f'Добавленных файлов: {count_share}\n'
                 f'Изменена: {current_folder.datetime_change.strftime("%d.%m.%Y %H:%M")}'
             )
 
         return self.CHAT_ACTION_MESSAGE, (mess, buttons)
 
+    def get_root_user_folder(self):
+        root_user_folder = self.get_queryset().get(
+            user_id=self.user.id,
+            parent=None
+        )
+
+        return root_user_folder
+
+    def get_mounts_instance(self, folder_id=None):
+        mounts_instance = MountInstance.objects.filter(
+            user_id=self.user.id,
+            mount_folder=folder_id
+        )
+
+        return mounts_instance
+
+    def generate_share_queryset(self, mounts_instance):
+        share_queryset = []
+
+        if mounts_instance:
+            for mount in mounts_instance:
+                if share_file := mount.share_content.file:
+                    share_queryset.append(share_file)
+                elif share_folder := mount.share_content.folder:
+                    share_queryset.append(share_folder)
+
+        return share_queryset
+
     def generate_show_list_static_button(self, model):
+        root_user_folder = self.get_root_user_folder()
 
         buttons = [
             [
@@ -264,21 +312,32 @@ class FolderViewSet(TelegaViewSet):
             ]
         ]
 
-        if model.parent:
+        if model.parent and not model.sharelinks:
             buttons += [
-            [
-                InlineKeyboardButtonDJ(
-                    text=_(f'📝 Редактировать {model.name}'),
-                    callback_data=self.gm_callback_data(
-                        'show_elem', model.pk
+                [
+                    InlineKeyboardButtonDJ(
+                        text=_(f'📝 Редактировать {model.name}'),
+                        callback_data=self.gm_callback_data(
+                            'show_elem', model.pk
+                        )
                     )
-                )
-            ],
+                ],
                 [
                     InlineKeyboardButtonDJ(
                         text=_('🔙 Назад'),
                         callback_data=self.gm_callback_data(
                             'show_list', model.parent.pk
+                        )
+                    )
+                ]
+            ]
+        elif model.sharelinks:
+            buttons += [
+                [
+                    InlineKeyboardButtonDJ(
+                        text=_('🔙 Назад'),
+                        callback_data=self.gm_callback_data(
+                            'show_list', root_user_folder.pk
                         )
                     )
                 ]
@@ -342,6 +401,14 @@ class FileViewSet(TelegaViewSet):
     queryset = File.objects.all()
     viewset_name = 'FileViewSet'
     updating_fields = ['text', 'media_id']
+
+    def get_root_user_folder(self):
+        root_user_folder = Folder.objects.get(
+            user_id=self.user.id,
+            parent=None
+        )
+
+        return root_user_folder
 
     def create(self, field=None, value=None):
         
@@ -478,6 +545,8 @@ class FileViewSet(TelegaViewSet):
             return self.generate_message_no_elem(model_or_pk)
 
     def generate_elem_buttons(self, model, elem_per_raw=2):
+        root_user_folder = self.get_root_user_folder()
+
         buttons = [
             [
                 InlineKeyboardButtonDJ(
@@ -497,21 +566,51 @@ class FileViewSet(TelegaViewSet):
             ],
             [
                 InlineKeyboardButtonDJ(
+                    text=_('Создать ShareLink'),
+                    callback_data=ShareLinkViewSet(
+                        telega_reverse('base:ShareLinkViewSet')
+                    ).gm_callback_data('create', 'file', model.id)
+                ),
+            ],
+            [
+                InlineKeyboardButtonDJ(
+                    text=_('Список ShareLink'),
+                    callback_data=ShareLinkViewSet(
+                        telega_reverse('base:ShareLinkViewSet')
+                    ).gm_callback_data('show_list')
+                )
+            ],
+            [
+                InlineKeyboardButtonDJ(
                     text=_('❌ Удалить'),
                     callback_data=self.gm_callback_data(
                         'delete', model.id
                     )
                 ),
             ],
-            [
-                InlineKeyboardButtonDJ(
-                    text=_('🔙 Назад'),
-                    callback_data=FolderViewSet(
-                        telega_reverse('base:FolderViewSet')
-                    ).gm_callback_data('show_list', model.folder.id)
-                ),
-            ],
         ]
+        if model.sharelinks:
+            buttons += [
+                [
+                    InlineKeyboardButtonDJ(
+                        text=_('🔙 Назад'),
+                        callback_data=FolderViewSet(
+                            telega_reverse('base:FolderViewSet')
+                        ).gm_callback_data('show_list', root_user_folder.pk)
+                    ),
+                ],
+            ]
+        else:
+            buttons += [
+                [
+                    InlineKeyboardButtonDJ(
+                        text=_('🔙 Назад'),
+                        callback_data=FolderViewSet(
+                            telega_reverse('base:FolderViewSet')
+                        ).gm_callback_data('show_list', model.folder.id)
+                    ),
+                ],
+            ]
 
         return buttons
 
@@ -536,3 +635,112 @@ class FileViewSet(TelegaViewSet):
         self.update.callback_query = None
 
         return super().show_elem(model_or_pk, mess)
+
+
+class ShareLinkViewSet(TelegaViewSet):
+    telega_form = ShareLinkForm
+    queryset = ShareLink.objects.all()
+    viewset_name = 'ShareLinkViewSet'
+    updating_fields = ['type_link', 'share_amount']
+
+    def get_queryset(self):
+        
+        filter_share_link = (
+            Q(folder__user_id=self.user.id) |
+            Q(file__user_id=self.user.id)
+        )
+        return super().get_queryset().filter(filter_share_link)
+
+    def create(self, field=None, value=None):
+        
+        if field is None and value is None:
+            self.user.clear_status(commit=False)
+
+        initial_data = {
+            'share_code': str(uuid4())
+        }
+
+        if field == 'folder':
+            initial_data['file'] = None
+        elif field == 'file':
+            initial_data['folder'] = None
+
+        return self.create_or_update_helper(
+            field, value, 'create', initial_data=initial_data
+        )
+
+    def show_list(self, page=0, per_page=10, columns=1):
+        __, (mess, buttons) = super().show_list(page, per_page, columns)
+        
+        root_folder = Folder.objects.filter(
+            user_id=self.user.id,
+            parent=None
+        ).first()
+
+        buttons += [
+            [
+                InlineKeyboardButtonDJ(
+                    text=_('🔙 Назад'),
+                    callback_data=FileViewSet(
+                        telega_reverse('base:FolderViewSet')
+                    ).gm_callback_data('show_list', root_folder.pk)
+                )
+            ]
+        ]
+
+        return self.CHAT_ACTION_MESSAGE, (mess, buttons)
+
+    def generate_elem_buttons(self, model, elem_per_raw=2):
+        buttons = []
+
+        if model.folder:
+            buttons += [
+                [
+                    InlineKeyboardButtonDJ(
+                        text=_('🔙 Назад в папку'),
+                        callback_data=FolderViewSet(
+                            telega_reverse('base:FolderViewSet')
+                        ).gm_callback_data('show_elem', model.folder.id)
+                    ),
+                ]
+            ]
+        elif model.file:
+            buttons += [
+                [
+                    InlineKeyboardButtonDJ(
+                        text=_('🔙 Назад в файл'),
+                        callback_data=FolderViewSet(
+                            telega_reverse('base:FileViewSet')
+                        ).gm_callback_data('show_elem', model.file.id)
+                    ),
+                ]
+            ]
+
+        buttons += [
+            [
+                InlineKeyboardButtonDJ(
+                    text=_('Type link'),
+                    callback_data=self.gm_callback_data(
+                        'change', model.id, 'type_link'
+                    )
+                ),
+            ],
+            [
+                InlineKeyboardButtonDJ(
+                    text=_('Share amount'),
+                    callback_data=self.gm_callback_data(
+                        'change', model.id, 'share_amount'
+                    )
+                ),
+            ],
+            [
+                InlineKeyboardButtonDJ(
+                    text=_('❌ Удалить'),
+                    callback_data=self.gm_callback_data(
+                        'delete', model.id
+                    )
+                ),
+            ],
+        ]
+
+        return buttons

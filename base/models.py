@@ -105,7 +105,7 @@ class ShareLink(models.Model):
     )
 
     def __str__(self):
-        return self.type_link
+        return str(self.pk)
 
     class Meta:
         ordering = ['type_link']
