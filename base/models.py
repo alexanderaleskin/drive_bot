@@ -47,11 +47,17 @@ class File(models.Model):
         User,
         on_delete=models.CASCADE,
     )
+    name = models.CharField(
+        max_length=200,
+    )
     message_format = models.CharField(
         max_length=200,
     )
     media_id = models.CharField(
         max_length=1000,
+    )
+    datetime_change = models.DateTimeField(
+        auto_now=True
     )
     folder = models.ForeignKey(
         'Folder',
@@ -65,10 +71,10 @@ class File(models.Model):
     )
 
     def __str__(self):
-        return f'{self.media_id} - {self.text}'
+        return self.name
 
     class Meta:
-        ordering = ['media_id']
+        ordering = ['name']
 
 
 class ShareLink(models.Model):

@@ -37,6 +37,19 @@ def start(bot: TG_DJ_Bot, update: Update, user: User):
             ),
         ]
     ]
+
+    if update.message and update.message.text.startswith('/start') and len(update.message.text) > 6:
+        share_code = update.message.text.split()[-1]
+        share_link = ShareLink.objects.filter(share_code=share_code).first()
+        
+        if share_link:
+            MountInstance.objects.get_or_create(
+                mount_folder=root_folder,
+                user=user,
+                share_content=share_link
+            )
+
+        return bot.edit_or_send(update, message, buttons)
     
     return bot.edit_or_send(update, message, buttons)
 
@@ -48,17 +61,17 @@ class FolderViewSet(TelegaViewSet):
     updating_fields = ['name']
 
     icon_format = {
-        'T': '📜',
-        'P': '📷',
-        'D': '📋',
-        'A': '🔊',
-        'V': '🎥',
-        'G': '📺',
-        'TV': '🗣',
-        'VN': '🎬',
-        'S': '🎃',
-        'L': '🗺',
-        'GM': '📽'
+        MESSAGE_FORMAT.TEXT: '📜',
+        MESSAGE_FORMAT.PHOTO: '📷',
+        MESSAGE_FORMAT.DOCUMENT: '📋',
+        MESSAGE_FORMAT.AUDIO: '🔊',
+        MESSAGE_FORMAT.VIDEO: '🎥',
+        MESSAGE_FORMAT.GIF: '📺',
+        MESSAGE_FORMAT.VOICE: '🗣',
+        MESSAGE_FORMAT.VIDEO_NOTE: '🎬',
+        MESSAGE_FORMAT.STICKER: '🎃',
+        MESSAGE_FORMAT.LOCATION: '🗺',
+        MESSAGE_FORMAT.GROUP_MEDIA: '📽'
     }
 
     def delete(self, model_or_pk, is_confirmed=False):
@@ -294,6 +307,9 @@ class FolderViewSet(TelegaViewSet):
 
     def generate_show_list_static_button(self, model):
         root_user_folder = self.get_root_user_folder()
+        mounts_instance = self.get_mounts_instance(root_user_folder.pk)
+        share_queryset = self.generate_share_queryset(mounts_instance)
+        print(share_queryset)
 
         buttons = [
             [
@@ -312,7 +328,18 @@ class FolderViewSet(TelegaViewSet):
             ]
         ]
 
-        if model.parent and not model.sharelinks:
+        if model in share_queryset:
+            buttons += [
+                [
+                    InlineKeyboardButtonDJ(
+                        text=_('🔙 Назад'),
+                        callback_data=self.gm_callback_data(
+                            'show_list', root_user_folder.pk
+                        )
+                    )
+                ]
+            ]
+        elif model.parent:
             buttons += [
                 [
                     InlineKeyboardButtonDJ(
@@ -327,17 +354,6 @@ class FolderViewSet(TelegaViewSet):
                         text=_('🔙 Назад'),
                         callback_data=self.gm_callback_data(
                             'show_list', model.parent.pk
-                        )
-                    )
-                ]
-            ]
-        elif model.sharelinks:
-            buttons += [
-                [
-                    InlineKeyboardButtonDJ(
-                        text=_('🔙 Назад'),
-                        callback_data=self.gm_callback_data(
-                            'show_list', root_user_folder.pk
                         )
                     )
                 ]
@@ -668,6 +684,12 @@ class ShareLinkViewSet(TelegaViewSet):
         return self.create_or_update_helper(
             field, value, 'create', initial_data=initial_data
         )
+
+    def generate_show_fields(self, model, full_show=False):
+        mess = super().generate_show_fields(model, full_show)
+        mess += f'https://t.me/django_telegram_orm_bot?start={model.share_code}'
+
+        return mess
 
     def show_list(self, page=0, per_page=10, columns=1):
         __, (mess, buttons) = super().show_list(page, per_page, columns)

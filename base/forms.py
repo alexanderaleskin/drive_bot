@@ -8,7 +8,7 @@ class FileForm(td_forms.TelegaModelForm):
 
     class Meta:
         model = File
-        fields = ['media_id', 'message_format', 'text', 'folder', 'user']
+        fields = ['media_id', 'name','message_format', 'text', 'folder', 'user']
 
 
 class FolderForm(td_forms.TelegaModelForm):
