@@ -15,7 +15,7 @@ from telegram import Update
 
 from .models import MountInstance, ShareLink, User, File, Folder
 from .forms import FileForm, FolderForm, ShareLinkForm
-
+from .permissions import CheckFolderPermission, CheckFilePermission
 
 @handler_decor()
 def start(bot: TG_DJ_Bot, update: Update, user: User):
@@ -293,6 +293,14 @@ class FolderViewSet(TelegaViewSet):
 
         return mounts_instance
 
+    def get_share_link_model(self, model):
+        mount_instance = MountInstance.objects.filter(
+            user_id=self.user.id,
+            share_content__folder=model
+        ).first()
+
+        return mount_instance.share_content
+
     def generate_share_queryset(self, mounts_instance):
         share_queryset = []
 
@@ -309,7 +317,6 @@ class FolderViewSet(TelegaViewSet):
         root_user_folder = self.get_root_user_folder()
         mounts_instance = self.get_mounts_instance(root_user_folder.pk)
         share_queryset = self.generate_share_queryset(mounts_instance)
-        print(share_queryset)
 
         buttons = [
             [
@@ -329,6 +336,26 @@ class FolderViewSet(TelegaViewSet):
         ]
 
         if model in share_queryset:
+            buttons = []
+            share_link = self.get_share_link_model(model)
+            if CheckFolderPermission.check_type_for_change(model, share_link):
+                buttons += [
+                    [
+                        InlineKeyboardButtonDJ(
+                            text=_('➕ Добавить папку'),
+                            callback_data=self.gm_callback_data(
+                                'create', 'parent', model.pk
+                            )
+                        ),
+                        InlineKeyboardButtonDJ(
+                            text=_('➕ Добавить файл'),
+                            callback_data=FileViewSet(
+                                telega_reverse('base:FileViewSet')
+                            ).gm_callback_data('create', 'folder', model.pk)
+                        )
+                    ]
+                ]
+
             buttons += [
                 [
                     InlineKeyboardButtonDJ(
@@ -392,7 +419,8 @@ class FolderViewSet(TelegaViewSet):
             return _(f'📁 {model.name}')
         else:
             return _(
-                f'{self.icon_format[model.message_format]} {model.text if model.text else model.message_format}'
+                f'{self.icon_format[model.message_format]} \
+                {model.text if model.text else model.message_format}'
             )
 
     def generate_message_self_variant(
@@ -560,8 +588,29 @@ class FileViewSet(TelegaViewSet):
         else:
             return self.generate_message_no_elem(model_or_pk)
 
+    def get_share_link_model(self, model):
+        mount_instanse = MountInstance.objects.filter(
+            user_id=self.user.id,
+            share_content__file=model
+        ).first()
+
+        return mount_instanse.share_content
+
+    def get_share_file_queryset(self):
+        share_list = []
+        mounts_instanse = MountInstance.objects.filter(
+            user_id=self.user.id
+        )
+        for mount in mounts_instanse:
+            if mount.share_content.file:
+                share_list.append(mount.share_content.file)
+
+        return share_list
+
+
     def generate_elem_buttons(self, model, elem_per_raw=2):
         root_user_folder = self.get_root_user_folder()
+        share_file_queryset = self.get_share_file_queryset()
 
         buttons = [
             [
@@ -605,7 +654,36 @@ class FileViewSet(TelegaViewSet):
                 ),
             ],
         ]
-        if model.sharelinks:
+        if model in share_file_queryset:
+            share_link = self.get_share_link_model(model)
+            buttons = []
+            if CheckFilePermission.check_type_for_change(model, share_link):
+                buttons += [
+                    [
+                        InlineKeyboardButtonDJ(
+                            text=_('🗄 Файл'),
+                            callback_data=self.gm_callback_data(
+                                'change', model.id, 'media_id'
+                            )
+                        ),
+                    ],
+                    [
+                        InlineKeyboardButtonDJ(
+                            text=_('💬 Заметка'),
+                            callback_data=self.gm_callback_data(
+                                'change', model.id, 'text'
+                            )
+                        ),
+                    ],
+                    [
+                        InlineKeyboardButtonDJ(
+                            text=_('❌ Удалить'),
+                            callback_data=self.gm_callback_data(
+                                'delete', model.id
+                            )
+                        ),
+                    ],
+                ]
             buttons += [
                 [
                     InlineKeyboardButtonDJ(

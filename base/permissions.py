@@ -1,7 +1,21 @@
-from telegram_django_bot.permissions import BasePermissionClass
+from .models import ShareLink
 
 
-class CheckFolderPermission(BasePermissionClass):
-    def has_permissions(self, bot, update, user, utrl_args, **kwargs):
+class CheckFolderPermission:
+    @staticmethod
+    def check_type_for_change(model, share_link):
+        if share_link.folder == model and \
+                share_link.type_link == ShareLink.TYPE_SHOW_CHANGE:
+            
+            return True
+        return False
 
-        return
+
+class CheckFilePermission:
+    @staticmethod
+    def check_type_for_change(model, share_link):
+        if share_link.file == model and \
+                share_link.type_link == ShareLink.TYPE_SHOW_CHANGE:
+            
+            return True
+        return False
