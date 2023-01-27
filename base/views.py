@@ -10,7 +10,7 @@ from telegram_django_bot.utils import handler_decor
 from telegram_django_bot.tg_dj_bot import TG_DJ_Bot
 
 from django.utils.translation import gettext as _
-from django.db.models import Q
+from django.db.models import Q, Count
 
 from telegram import Update
 
@@ -43,10 +43,14 @@ def start(bot: TG_DJ_Bot, update: Update, user: User):
     if update.message and update.message.text.startswith('/start') and \
             len(update.message.text) > 6:
         share_code = update.message.text.split()[-1]
-        share_link = ShareLink.objects.filter(share_code=share_code).first()
-        count_users = MountInstance.objects.filter(share_content=share_link).count()
+        share_link = (
+            ShareLink.objects
+            .filter(share_code=share_code)
+            .annotate(user_count=Count('mountinstance'))
+            .first()
+        )
         
-        if share_link and share_link.share_amount > count_users:
+        if share_link and share_link.share_amount > share_link.user_count:
             MountInstance.objects.get_or_create(
                 user=user,
                 share_content=share_link,
