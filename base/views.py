@@ -1,5 +1,6 @@
 import copy
 from uuid import uuid4
+from django.conf import settings
 
 from telegram_django_bot.models import MESSAGE_FORMAT
 from telegram_django_bot.routing import telega_reverse
@@ -46,12 +47,10 @@ def start(bot: TG_DJ_Bot, update: Update, user: User):
         
         if share_link:
             MountInstance.objects.get_or_create(
-                mount_folder=root_folder,
                 user=user,
-                share_content=share_link
+                share_content=share_link,
+                defaults={'mount_folder': root_folder}
             )
-
-        return bot.edit_or_send(update, message, buttons)
     
     return bot.edit_or_send(update, message, buttons)
 
@@ -154,7 +153,7 @@ class FolderViewSet(TelegaViewSet):
                         text=_('Создать ShareLinks'),
                         callback_data=ShareLinkViewSet(
                             telega_reverse('base:ShareLinkViewSet')
-                        ).gm_callback_data('create', 'folder', model.pk)
+                        ).gm_callback_data('create', model.pk, 'folder', model.pk)
                     ),
                 ],
                 [
@@ -162,7 +161,7 @@ class FolderViewSet(TelegaViewSet):
                         text=_('Список ShareLink'),
                         callback_data=ShareLinkViewSet(
                             telega_reverse('base:ShareLinkViewSet')
-                        ).gm_callback_data('show_list')
+                        ).gm_callback_data('show_list', model.pk)
                     )
                 ],
                 [
@@ -636,7 +635,7 @@ class FileViewSet(TelegaViewSet):
                     text=_('Создать ShareLink'),
                     callback_data=ShareLinkViewSet(
                         telega_reverse('base:ShareLinkViewSet')
-                    ).gm_callback_data('create', 'file', model.id)
+                    ).gm_callback_data('create', model.id, 'file', model.id)
                 ),
             ],
             [
@@ -644,7 +643,7 @@ class FileViewSet(TelegaViewSet):
                     text=_('Список ShareLink'),
                     callback_data=ShareLinkViewSet(
                         telega_reverse('base:ShareLinkViewSet')
-                    ).gm_callback_data('show_list')
+                    ).gm_callback_data('show_list', model.id)
                 )
             ],
             [
@@ -738,12 +737,13 @@ class ShareLinkViewSet(TelegaViewSet):
     queryset = ShareLink.objects.all()
     viewset_name = 'ShareLinkViewSet'
     updating_fields = ['type_link', 'share_amount']
+    foreign_filter_amount = 1
 
     def get_queryset(self):
         
         filter_share_link = (
-            Q(folder__user_id=self.user.id) |
-            Q(file__user_id=self.user.id)
+            Q(folder=self.foreign_filters[0]) |
+            Q(file=self.foreign_filters[0])
         )
         return super().get_queryset().filter(filter_share_link)
 
@@ -753,12 +753,11 @@ class ShareLinkViewSet(TelegaViewSet):
             self.user.clear_status(commit=False)
 
         initial_data = {
-            'share_code': str(uuid4())
+            'share_code': str(uuid4()),
         }
-
         if field == 'folder':
             initial_data['file'] = ''
-        elif field == 'file':
+        if field == 'file':
             initial_data['folder'] = ''
 
         return self.create_or_update_helper(
@@ -767,14 +766,13 @@ class ShareLinkViewSet(TelegaViewSet):
 
     def generate_show_fields(self, model, full_show=False):
         mess = super().generate_show_fields(model, full_show)
-        mess += f'https://t.me/django_telegram_orm_bot?start={model.share_code}'
+        mess += f'https://t.me/{settings.MAIN_BOT_USERNAME}?start={model.share_code}'
 
         return mess
 
     def show_list(self, page=0, per_page=10, columns=1):
         __, (mess, buttons) = super().show_list(page, per_page, columns)
-        
-        root_folder = Folder.objects.filter(
+        root_user_folder = Folder.objects.filter(
             user_id=self.user.id,
             parent=None
         ).first()
@@ -785,7 +783,7 @@ class ShareLinkViewSet(TelegaViewSet):
                     text=_('🔙 Назад'),
                     callback_data=FileViewSet(
                         telega_reverse('base:FolderViewSet')
-                    ).gm_callback_data('show_list', root_folder.pk)
+                    ).gm_callback_data('show_list', root_user_folder.pk)
                 )
             ]
         ]

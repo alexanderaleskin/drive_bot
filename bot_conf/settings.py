@@ -207,7 +207,7 @@ STATIC_ROOT = '/web/static/'
 
 
 TELEGRAM_TOKEN = env.str('TELEGRAM_TOKEN', default='')
-MAIN_BOT_USERNAME = env.str('TELEGRAM_BOT_NAME', default='')
+MAIN_BOT_USERNAME = os.environ.get('TELEGRAM_BOT_NAME')
 TELEGRAM_LOG = env.str('TELEGRAM_LOG', default='/web/logs/bot.log')
 
 TELEGRAM_ROOT_UTRLCONF = 'bot_conf.utrls'

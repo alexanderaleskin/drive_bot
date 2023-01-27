@@ -9,7 +9,7 @@ class User(TelegramUser):
         Folder.objects.get_or_create(
             user=self,
             parent=None,
-            name='',
+            defaults={'name': ''}
         )
 
 
@@ -90,6 +90,7 @@ class ShareLink(models.Model):
         'Folder',
         on_delete=models.CASCADE,
         related_name='sharelinks',
+        default=None,
         null=True,
         blank=True
     )
@@ -97,6 +98,7 @@ class ShareLink(models.Model):
         'File',
         on_delete=models.CASCADE,
         related_name='sharelinks',
+        default=None,
         null=True,
         blank=True
     )
