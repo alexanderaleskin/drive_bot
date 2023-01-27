@@ -44,8 +44,9 @@ def start(bot: TG_DJ_Bot, update: Update, user: User):
             len(update.message.text) > 6:
         share_code = update.message.text.split()[-1]
         share_link = ShareLink.objects.filter(share_code=share_code).first()
+        count_users = MountInstance.objects.filter(share_content=share_link).count()
         
-        if share_link:
+        if share_link and share_link.share_amount > count_users:
             MountInstance.objects.get_or_create(
                 user=user,
                 share_content=share_link,
