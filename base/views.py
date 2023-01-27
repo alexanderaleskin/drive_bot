@@ -17,6 +17,7 @@ from .models import MountInstance, ShareLink, User, File, Folder
 from .forms import FileForm, FolderForm, ShareLinkForm
 from .permissions import CheckFolderPermission, CheckFilePermission
 
+
 @handler_decor()
 def start(bot: TG_DJ_Bot, update: Update, user: User):
     root_folder = Folder.objects.filter(
@@ -38,7 +39,8 @@ def start(bot: TG_DJ_Bot, update: Update, user: User):
         ]
     ]
 
-    if update.message and update.message.text.startswith('/start') and len(update.message.text) > 6:
+    if update.message and update.message.text.startswith('/start') and \
+            len(update.message.text) > 6:
         share_code = update.message.text.split()[-1]
         share_link = ShareLink.objects.filter(share_code=share_code).first()
         

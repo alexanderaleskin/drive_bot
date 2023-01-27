@@ -128,7 +128,7 @@ class MountInstance(models.Model):
     )
     share_content = models.ForeignKey(
         'ShareLink',
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
     )
     
     class Meta:
