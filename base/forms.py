@@ -1,33 +1,27 @@
-from telegram_django_bot.models import BotMenuElem
 from django.utils.translation import gettext_lazy as _
-from django import forms
 from telegram_django_bot import forms as td_forms
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton, Bot, error
-from django.conf import settings
-import json
-from django.utils import timezone
 
+from .models import File, Folder, ShareLink
 
-class BotMenuElemForm(td_forms.TelegaModelForm):
-    form_name = _("Menu elem")
+class FileForm(td_forms.TelegaModelForm):
+    form_name = _("Menu file")
 
     class Meta:
-        model = BotMenuElem
-        fields = ['command', "is_visable", "callbacks_db", "message", "buttons_db"]
-        # labels = {
-        #     "text": _("Text"),
-        #     "media_id": _('Media'),
-        # }
-        # widget = {
-        #     "entities": forms.HiddenInput(),
-        #     "author": forms.HiddenInput(),
-        # }
+        model = File
+        fields = ['media_id', 'name','message_format', 'text', 'folder', 'user']
 
-    def clean(self):
 
-        # data = self.data
-        cleaned_data = super().clean()
+class FolderForm(td_forms.TelegaModelForm):
+    form_name = _("Menu folder")
 
-        self.cleaned_data = cleaned_data
-        return self.cleaned_data
+    class Meta:
+        model = Folder
+        fields = ['name', 'user', 'parent']
 
+
+class ShareLinkForm(td_forms.TelegaModelForm):
+    form_name = _('Menu sharelink')
+
+    class Meta:
+        model = ShareLink
+        fields = ['file', 'folder', 'type_link', 'share_amount','share_code']
