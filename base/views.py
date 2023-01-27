@@ -755,9 +755,9 @@ class ShareLinkViewSet(TelegaViewSet):
         }
 
         if field == 'folder':
-            initial_data['file'] = None
+            initial_data['file'] = ''
         elif field == 'file':
-            initial_data['folder'] = None
+            initial_data['folder'] = ''
 
         return self.create_or_update_helper(
             field, value, 'create', initial_data=initial_data
