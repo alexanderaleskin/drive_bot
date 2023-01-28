@@ -21,33 +21,33 @@ msgstr ""
 "(n%100>=11 && n%100<=14)? 2 : 3);\n"
 
 #: base/forms.py:9
-msgid "Menu file"
+msgid "Меню файла"
 msgstr ""
 
 #: base/forms.py:16
-msgid "Note"
+msgid "Примечание"
 msgstr ""
 
 #: base/forms.py:21
-msgid "Menu folder"
+msgid "Меню папки"
 msgstr ""
 
 #: base/forms.py:28
-msgid "Folder name"
+msgid "Имя папки"
 msgstr ""
 
 #: base/forms.py:33
-msgid "Menu sharelink"
+msgid "Меню sharelink"
 msgstr ""
 
 #: base/forms.py:49
-msgid "Main folder could not be shared"
+msgid "Не удалось открыть общий доступ к основной папке"
 msgstr ""
 
 #: base/forms.py:58
 msgid ""
-"There is mounted instances in descendants. You could not share this "
-"folder. \n"
+"В потомках есть смонтированные экземпляры. Вы не могли бы поделиться этим  "
+"папка. \n"
 msgstr ""
 
 #: base/views.py:50
