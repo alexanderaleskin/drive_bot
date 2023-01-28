@@ -160,7 +160,7 @@ msgstr "🗄 Файл"
 msgid "💬 Note"
 msgstr "💬 Заметка"
 
-#: base/views.py:132
+#: base/views.py:120
 msgid "Off"
 msgstr "Выключен"
 
