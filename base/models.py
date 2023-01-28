@@ -1,5 +1,8 @@
 from telegram_django_bot.models import TelegramUser
 from django.db import models
+from django.utils import timezone
+
+from mptt.models import MPTTModel, TreeForeignKey
 
 
 class User(TelegramUser):
@@ -13,13 +16,13 @@ class User(TelegramUser):
         )
 
 
-class Folder(models.Model):
+class Folder(MPTTModel):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='folders',
     )
-    parent = models.ForeignKey(
+    parent = TreeForeignKey(
         'self',
         on_delete=models.CASCADE,
         blank=True,
@@ -28,18 +31,17 @@ class Folder(models.Model):
     name = models.CharField(
         max_length=200,
     )
-    datetime_change = models.DateTimeField(
-        auto_now=True,
-    )
+    last_modified = models.DateTimeField(default=timezone.now)
 
-    def get_folder(self):
-        pass
+    def save(self, *args, **kwargs):
+        self.last_modified = timezone.now()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
 
-    class Meta:
-        ordering = ['name']
+    class MPTTMeta:
+        order_insertion_by = ['name']
 
 
 class File(models.Model):
@@ -95,7 +97,7 @@ class ShareLink(models.Model):
         blank=True
     )
     file = models.ForeignKey(
-        'File',
+        File,
         on_delete=models.CASCADE,
         related_name='sharelinks',
         default=None,
@@ -129,7 +131,7 @@ class MountInstance(models.Model):
         on_delete=models.CASCADE
     )
     share_content = models.ForeignKey(
-        'ShareLink',
+        ShareLink,
         on_delete=models.CASCADE,
     )
     

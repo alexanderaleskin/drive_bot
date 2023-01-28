@@ -1,14 +1,20 @@
 from django.utils.translation import gettext_lazy as _
+from django import forms
 from telegram_django_bot import forms as td_forms
 
-from .models import File, Folder, ShareLink
+from .models import File, Folder, ShareLink, MountInstance
+
 
 class FileForm(td_forms.TelegaModelForm):
     form_name = _("Menu file")
 
     class Meta:
         model = File
-        fields = ['media_id', 'name','message_format', 'text', 'folder', 'user']
+        fields = ['media_id', 'name', 'message_format', 'text', 'folder', 'user']
+
+        labels = {
+            'text': _('Note'),
+        }
 
 
 class FolderForm(td_forms.TelegaModelForm):
@@ -18,6 +24,10 @@ class FolderForm(td_forms.TelegaModelForm):
         model = Folder
         fields = ['name', 'user', 'parent']
 
+        labels = {
+            'name': _('Folder name'),
+        }
+
 
 class ShareLinkForm(td_forms.TelegaModelForm):
     form_name = _('Menu sharelink')
@@ -25,3 +35,30 @@ class ShareLinkForm(td_forms.TelegaModelForm):
     class Meta:
         model = ShareLink
         fields = ['file', 'folder', 'type_link', 'share_amount','share_code']
+
+        widgets = {
+            'share_code': forms.HiddenInput(),
+        }
+
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        if (folder:= cleaned_data.get('folder')):
+            if folder.parent_id is None:
+                self.add_error('folder', _('Main folder could not be shared'))
+
+            mounts_in_family = MountInstance.objects.filter(
+                mount_folder_id__in=folder.get_descendants(include_self=True).values_list('id', flat=True),
+                user=self.user
+            ).count()
+
+            if mounts_in_family:
+                self.add_error('folder', _(
+                    'There is mounted instances in descendants. You could not share this folder. \n'
+                ))
+
+        return cleaned_data
+
+
+

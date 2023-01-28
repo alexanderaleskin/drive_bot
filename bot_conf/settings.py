@@ -34,7 +34,7 @@ INSTALLED_APPS = [
     # 'rangefilter',
     'django_celery_beat',
     'django_json_widget',
-    'telegram_django_bot.apps.TelegramDjangoBotConfig',
+    'telegram_django_bot',
     'base',
 ]
 

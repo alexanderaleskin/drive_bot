@@ -9,6 +9,7 @@ django-celerybeat-status==0.0.10
 django-celery-beat==2.2.1
 django-environ==0.4.5
 django-json-widget==1.1.1
+django-mptt==0.14.0
 ipython==8.8.0
 kombu==5.1.0
 psycopg2-binary==2.9.3
