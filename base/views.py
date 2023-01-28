@@ -16,7 +16,7 @@ from telegram import Update
 
 from .models import MountInstance, ShareLink, User, File, Folder
 from .forms import FileForm, FolderForm, ShareLinkForm
-from .permissions import CheckFolderPermission, CheckFilePermission
+from .permissions import CheckFilePermissions, CheckFolderPermissions
 
 
 @handler_decor()
@@ -63,6 +63,7 @@ def start(bot: TG_DJ_Bot, update: Update, user: User):
 class FolderViewSet(TelegaViewSet):
     telega_form = FolderForm
     queryset = Folder.objects.all()
+    permission_classes = [CheckFolderPermissions]
     viewset_name = 'FolderViewSet'
     updating_fields = ['name']
 
@@ -122,6 +123,13 @@ class FolderViewSet(TelegaViewSet):
             return self.show_list(model.pk)
 
         return self.CHAT_ACTION_MESSAGE, (mess, [])
+
+    def has_permissions(self, model, bot, update, user, utrl_args, **kwargs):
+
+        for permission in self.permission_classes:
+            if not permission().has_permissions(model, bot, update, user, utrl_args, **kwargs):
+                return False
+        return True
 
     def show_elem(self, model_or_pk, mess=''):
         model = self._get_elem(model_or_pk)
@@ -343,8 +351,7 @@ class FolderViewSet(TelegaViewSet):
 
         if model in share_queryset:
             buttons = []
-            share_link = self.get_share_link_model(model)
-            if CheckFolderPermission.check_type_for_change(model, share_link):
+            if self.has_permissions(model, self.bot, self.update, self.user, None):
                 buttons += [
                     [
                         InlineKeyboardButtonDJ(
@@ -449,6 +456,7 @@ class FolderViewSet(TelegaViewSet):
 class FileViewSet(TelegaViewSet):
     telega_form = FileForm
     queryset = File.objects.all()
+    permission_classes = [CheckFilePermissions]
     viewset_name = 'FileViewSet'
     updating_fields = ['text', 'media_id']
 
@@ -613,6 +621,12 @@ class FileViewSet(TelegaViewSet):
 
         return share_list
 
+    def has_permissions(self, model, bot, update, user, utrl_args, **kwargs):
+
+        for permission in self.permission_classes:
+            if not permission().has_permissions(model, bot, update, user, utrl_args, **kwargs):
+                return False
+        return True
 
     def generate_elem_buttons(self, model, elem_per_raw=2):
         root_user_folder = self.get_root_user_folder()
@@ -661,9 +675,8 @@ class FileViewSet(TelegaViewSet):
             ],
         ]
         if model in share_file_queryset:
-            share_link = self.get_share_link_model(model)
             buttons = []
-            if CheckFilePermission.check_type_for_change(model, share_link):
+            if self.has_permissions(model, self.bot, self.update, self.user, None):
                 buttons += [
                     [
                         InlineKeyboardButtonDJ(
