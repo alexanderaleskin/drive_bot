@@ -4,26 +4,30 @@ from .models import ShareLink
 
 
 class CheckFolderPermissions(BasePermissionClass):
-    def has_permissions(self, model, bot, update, user, utrl_args, **kwargs):
-        share_link = ShareLink.objects.filter(
-            folder=model,
-            mountinstance__user_id=user.id
-        ).first()
+    def has_permissions(self, bot, update, user, utrl_args, **kwargs):
+        if kwargs:
+            share_link = ShareLink.objects.filter(
+                folder_id=kwargs['model'].pk,
+                mountinstance__user=user
+            ).first()
 
-        if share_link.type_link == ShareLink.TYPE_SHOW_CHANGE:
+            if share_link.type_link == ShareLink.TYPE_SHOW_CHANGE:
             
-            return True
-        return False
+                return True
+            return False
+        return True
 
 
 class CheckFilePermissions(BasePermissionClass):
-    def has_permissions(self, model, bot, update, user, utrl_args, **kwargs):
-        share_link = ShareLink.objects.filter(
-            file=model,
-            mountinstance__user_id=user.id
-        ).first()
+    def has_permissions(self, bot, update, user, utrl_args=None, **kwargs):
+        if kwargs:
+            share_link = ShareLink.objects.filter(
+                file_id=kwargs['model'].pk,
+                mountinstance__user=user
+            ).first()
 
-        if share_link.type_link == ShareLink.TYPE_SHOW_CHANGE:
+            if share_link.type_link == ShareLink.TYPE_SHOW_CHANGE:
             
-            return True
-        return False
+                return True
+            return False
+        return True

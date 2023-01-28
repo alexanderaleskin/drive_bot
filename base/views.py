@@ -124,10 +124,10 @@ class FolderViewSet(TelegaViewSet):
 
         return self.CHAT_ACTION_MESSAGE, (mess, [])
 
-    def has_permissions(self, model, bot, update, user, utrl_args, **kwargs):
+    def has_permissions(self, bot, update, user, utrl_args=None, **kwargs):
 
         for permission in self.permission_classes:
-            if not permission().has_permissions(model, bot, update, user, utrl_args, **kwargs):
+            if not permission().has_permissions(bot, update, user, utrl_args, **kwargs):
                 return False
         return True
 
@@ -351,7 +351,12 @@ class FolderViewSet(TelegaViewSet):
 
         if model in share_queryset:
             buttons = []
-            if self.has_permissions(model, self.bot, self.update, self.user, None):
+            if self.has_permissions(
+                    bot=self.bot,
+                    user=self.user,
+                    update=self.update,
+                    model=model):
+
                 buttons += [
                     [
                         InlineKeyboardButtonDJ(
@@ -621,10 +626,10 @@ class FileViewSet(TelegaViewSet):
 
         return share_list
 
-    def has_permissions(self, model, bot, update, user, utrl_args, **kwargs):
+    def has_permissions(self, bot, update, user, utrl_args=None, **kwargs):
 
         for permission in self.permission_classes:
-            if not permission().has_permissions(model, bot, update, user, utrl_args, **kwargs):
+            if not permission().has_permissions(bot, update, user, utrl_args, **kwargs):
                 return False
         return True
 
@@ -676,7 +681,12 @@ class FileViewSet(TelegaViewSet):
         ]
         if model in share_file_queryset:
             buttons = []
-            if self.has_permissions(model, self.bot, self.update, self.user, None):
+            if self.has_permissions(
+                    bot=self.bot,
+                    update=self.update,
+                    user=self.user,
+                    model=model):
+
                 buttons += [
                     [
                         InlineKeyboardButtonDJ(
