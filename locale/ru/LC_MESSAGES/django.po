@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-01-28 15:21+0300\n"
+"POT-Creation-Date: 2023-01-28 15:43+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,139 +21,156 @@ msgstr ""
 "(n%100>=11 && n%100<=14)? 2 : 3);\n"
 
 #: base/forms.py:9
-msgid "Меню файла"
-msgstr ""
+msgid "Menu file"
+msgstr "Меню файла"
 
 #: base/forms.py:16
-msgid "Примечание"
-msgstr ""
+msgid "Note"
+msgstr "Заметки"
 
 #: base/forms.py:21
-msgid "Меню папки"
-msgstr ""
+msgid "Menu folder"
+msgstr "Меню папки"
 
 #: base/forms.py:28
-msgid "Имя папки"
-msgstr ""
+msgid "Folder name"
+msgstr "Имя папки"
 
 #: base/forms.py:33
-msgid "Меню sharelink"
-msgstr ""
+msgid "Menu sharelink"
+msgstr "Меню ShareLink"
 
 #: base/forms.py:49
-msgid "Не удалось открыть общий доступ к основной папке"
-msgstr ""
+msgid "Main folder could not be shared"
+msgstr "Главнау папку нельзя расшарить"
 
 #: base/forms.py:58
 msgid ""
+"There is mounted instances in descendants. You could not share this "
+"folder. \n"
+msgstr ""
 "В потомках есть смонтированные экземпляры. Вы не могли бы поделиться этим  "
 "папка. \n"
-msgstr ""
 
 #: base/views.py:50
-msgid "⚙️ Настройки"
-msgstr ""
+msgid "⚙️ Settings"
+msgstr "⚙️ Настройки"
 
 #: base/views.py:58
-msgid "Папка"
-msgstr ""
+msgid "Folder"
+msgstr "Пака"
 
 #: base/views.py:82
 #, python-format
 msgid "📁 %(model_name)s"
-msgstr ""
+msgstr "📁 %(model_name)s"
 
 #: base/views.py:85
 msgid "%(icon)s  %(model_text)"
-msgstr ""
+msgstr "%(icon)s  %(model_text)"
 
 #: base/views.py:100
-msgid "🔙 Вернуться в папку"
-msgstr ""
+msgid "🔙 Return to folder"
+msgstr "🔙 Вернуться в папку"
 
 #: base/views.py:123
 #, python-format
 msgid ""
+"Folder: %(name)s\n"
+"Subfolder: %(subfolder_amount)s\n"
+"Files: %(files_amount)s\n"
+"General access: %(shared)s\n"
+"Changed: %(dttm)s\n"
+msgstr ""
 "Папка: %(name)s\n"
 "Подпапок: %(subfolder_amount)s\n"
 "Файлы: %(files_amount)s\n"
 "Общий доступ: %(shared)s\n"
 "Изменена: %(dttm)s\n"
-msgstr ""
 
 #: base/views.py:140
-msgid "📝 Название"
-msgstr ""
+msgid "📝 Title"
+msgstr "📝 Название"
 
 #: base/views.py:145 base/views.py:461
-msgid "🔗 Общий доступ"
-msgstr ""
+msgid "🔗 General access"
+msgstr "🔗 Общий доступ"
 
 #: base/views.py:146 base/views.py:463
-msgid "❌ Удалить"
-msgstr ""
+msgid "❌ Delete"
+msgstr "❌ Удалить"
 
 #: base/views.py:148 base/views.py:271 base/views.py:422 base/views.py:472
 #: base/views.py:558
-msgid "🔙 Назад"
-msgstr ""
+msgid "🔙 Back"
+msgstr "🔙 Назад"
 
 #: base/views.py:181
 msgid "◀️️️"
-msgstr ""
+msgstr "◀️️️"
 
 #: base/views.py:189
 msgid "▶️️"
-msgstr ""
+msgstr "▶️️"
 
 #: base/views.py:209
 #, python-format
 msgid ""
+"Folder: %(folder_name)s\n"
+"Subfolder: %(count_subfolder)d\n"
+"Files: %(count_file)d\n"
+"Added files: %(count_share)d\n"
+"Changed: %(date_change)s"
+msgstr ""
 "Папка: %(folder_name)s\n"
 "Подпапок: %(count_subfolder)d\n"
 "Файлы: %(count_file)d\n"
 "Добавленных файлов: %(count_share)d\n"
 "Изменена: %(date_change)s"
-msgstr ""
 
 #: base/views.py:237
 #, python-format
-msgid "📝 Редакдировать %(name)s"
-msgstr ""
+msgid "📝 Edit %(name)s"
+msgstr "📝 Редакдировать %(name)s"
 
 #: base/views.py:247
-msgid "➕ Добавить папку"
-msgstr ""
+msgid "➕ Add folder"
+msgstr "➕ Добавить папку"
 
 #: base/views.py:253
-msgid "➕ Добавить файл"
-msgstr ""
+msgid "➕ Add file"
+msgstr "➕ Добавить файл"
 
 #: base/views.py:317
-msgid "Файл"
-msgstr ""
+#: env/lib/python3.11/site-packages/django/db/models/fields/files.py:231
+msgid "File"
+msgstr "Файл"
 
 #: base/views.py:408
-msgid ""
+msgid "Please send the file you want to keep (you can send it in a message) 🗄"
+msgstr ""
 "Пожалуйста, отправьте файл, который вы хотите сохранить (вы можете отправить "
 "его в сообщении) 🗄"
-msgstr ""
 
 #: base/views.py:456
-msgid "🗄 Файл"
-msgstr ""
+msgid "🗄 File"
+msgstr "🗄 Файл"
 
 #: base/views.py:457
-msgid "💬 Заметка"
-msgstr ""
+msgid "💬 Note"
+msgstr "💬 Заметка"
+
+#: base/views.py:132
+msgid "Off"
+msgstr "Выключен"
 
 #: base/views.py:504
-msgid "Ссылка"
-msgstr ""
+msgid "Share"
+msgstr "Ссылка"
 
 #: base/views.py:557
-msgid "➕ Добавить"
-msgstr ""
+msgid "➕ Add"
+msgstr "➕ Добавить"
 
 #: bot_conf/settings.py:159
 msgid "Russian"
@@ -667,10 +684,6 @@ msgstr ""
 
 #: env/lib/python3.11/site-packages/django/db/models/fields/__init__.py:2303
 msgid "Universally unique identifier"
-msgstr ""
-
-#: env/lib/python3.11/site-packages/django/db/models/fields/files.py:231
-msgid "File"
 msgstr ""
 
 #: env/lib/python3.11/site-packages/django/db/models/fields/files.py:377
@@ -1793,16 +1806,3 @@ msgstr ""
 msgctxt "stick"
 msgid "club"
 msgstr ""
-
-#, fuzzy
-#~| msgid "➕ Add file"
-#~ msgid "➕ Add folder"
-#~ msgstr "➕ Добавить файл"
-
-#~ msgid "➕ Add file"
-#~ msgstr "➕ Добавить файл"
-
-#, fuzzy
-#~| msgid "➕ Add file"
-#~ msgid "➕ Add"
-#~ msgstr "➕ Добавить файл"
