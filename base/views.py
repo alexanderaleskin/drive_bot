@@ -9,7 +9,7 @@ from telegram_django_bot.td_viewset import TelegaViewSet
 from telegram_django_bot.utils import handler_decor
 from telegram_django_bot.tg_dj_bot import TG_DJ_Bot
 
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _, gettext_lazy
 from django.db.models import Count, F
 
 from telegram import Update
@@ -45,6 +45,10 @@ def start(bot: TG_DJ_Bot, update: Update, user: User):
 
     fvs = FolderViewSet(telega_reverse('base:FolderViewSet'), user=user)
     __, (message, buttons) = fvs.show_list(self_root_folder.id)
+
+    buttons.append([
+        InlineKeyboardButtonDJ(_('⚙️ Settings'), callback_data='us/se')
+    ])
     return bot.edit_or_send(update, message, buttons)
 
 
@@ -235,7 +239,7 @@ class FolderViewSet(TelegaViewSet):
                         )
                     ),
                     InlineKeyboardButtonDJ(
-                        text=_('➕ Добавить файл'),
+                        text=_('➕ Add file'),
                         callback_data=FileViewSet(
                             telega_reverse('base:FileViewSet')
                         ).gm_callback_data('create', 'folder', current_folder.pk)
@@ -299,7 +303,7 @@ class FolderViewSet(TelegaViewSet):
 class FileViewSet(TelegaViewSet):
     telega_form = FileForm
     queryset = File.objects.all()
-    viewset_name = 'FileViewSet'
+    viewset_name = gettext_lazy('File')
     updating_fields = ['text', 'media_id']
     actions = ['create', 'change', 'delete', 'show_elem']
     permission_classes = [CheckFilePermission]

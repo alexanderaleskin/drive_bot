@@ -156,7 +156,7 @@ USE_L10N = True
 USE_TZ = True
 
 LANGUAGES = [
-    # ('ru', _('Russian')),
+    ('ru', _('Russian')),
     ('en', _('English'))
 ]
 
