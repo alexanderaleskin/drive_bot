@@ -117,7 +117,8 @@ class FolderViewSet(TelegaViewSet):
 
     def show_elem(self, model_or_pk, mess=''):
         model = self._get_elem(model_or_pk)
-        off = _('Off')
+        off = _('OFF')
+        on = _('ON')
 
         if model:
             mess += _(
@@ -130,7 +131,7 @@ class FolderViewSet(TelegaViewSet):
                 'name': model.name,
                 'subfolder_amount': self.get_queryset().filter(parent_id=model.pk).count(),
                 'files_amount': File.objects.filter(folder_id=model.pk).count(),
-                'shared': 'Включен' if ShareLink.objects.filter(folder_id=model.pk).count() else off,
+                'shared': on if ShareLink.objects.filter(folder_id=model.pk).count() else off,
                 'dttm': model.last_modified.strftime("%d.%m.%Y %H:%M"),
             }
 

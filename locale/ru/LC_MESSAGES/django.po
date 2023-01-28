@@ -161,8 +161,12 @@ msgid "💬 Note"
 msgstr "💬 Заметка"
 
 #: base/views.py:120
-msgid "Off"
+msgid "OFF"
 msgstr "Выключен"
+
+#: base/views.py:121
+msgid "ON"
+msgstr "Включен"
 
 #: base/views.py:504
 msgid "Share"
