@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-01-28 15:21+0300\n"
+"POT-Creation-Date: 2023-01-28 15:14+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,9 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
-"n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || "
-"(n%100>=11 && n%100<=14)? 2 : 3);\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: base/forms.py:9
 msgid "Menu file"
@@ -51,11 +49,11 @@ msgid ""
 msgstr ""
 
 #: base/views.py:50
-msgid "⚙️ Настройки"
+msgid "⚙️ Settings"
 msgstr ""
 
 #: base/views.py:58
-msgid "Папка"
+msgid "Folder"
 msgstr ""
 
 #: base/views.py:82
@@ -68,34 +66,34 @@ msgid "%(icon)s  %(model_text)"
 msgstr ""
 
 #: base/views.py:100
-msgid "🔙 Вернуться в папку"
+msgid "🔙 Return to folder"
 msgstr ""
 
 #: base/views.py:123
 #, python-format
 msgid ""
-"Папка: %(name)s\n"
-"Подпапок: %(subfolder_amount)s\n"
-"Файлы: %(files_amount)s\n"
-"Общий доступ: %(shared)s\n"
-"Изменена: %(dttm)s\n"
+"Folder: %(name)s\n"
+"Subfolder: %(subfolder_amount)s\n"
+"Files: %(files_amount)s\n"
+"General access: %(shared)s\n"
+"Changed: %(dttm)s\n"
 msgstr ""
 
 #: base/views.py:140
-msgid "📝 Название"
+msgid "📝 Name"
 msgstr ""
 
 #: base/views.py:145 base/views.py:461
-msgid "🔗 Общий доступ"
+msgid "🔗 General access"
 msgstr ""
 
 #: base/views.py:146 base/views.py:463
-msgid "❌ Удалить"
+msgid "❌ Delete"
 msgstr ""
 
 #: base/views.py:148 base/views.py:271 base/views.py:422 base/views.py:472
 #: base/views.py:558
-msgid "🔙 Назад"
+msgid "🔙 Back"
 msgstr ""
 
 #: base/views.py:181
@@ -109,54 +107,45 @@ msgstr ""
 #: base/views.py:209
 #, python-format
 msgid ""
-"Папка: %(folder_name)s\n"
-"Подпапок: %(count_subfolder)d\n"
-"Файлы: %(count_file)d\n"
-"Добавленных файлов: %(count_share)d\n"
-"Изменена: %(date_change)s"
+"Folder: %(folder_name)s\n"
+"Subfolder: %(count_subfolder)d\n"
+"Files: %(count_file)d\n"
+"Added files: %(count_share)d\n"
+"Changed: %(date_change)s"
 msgstr ""
 
 #: base/views.py:237
 #, python-format
-msgid "📝 Редакдировать %(name)s"
+msgid "📝 Edit %(name)s"
 msgstr ""
 
 #: base/views.py:247
-msgid "➕ Добавить папку"
+msgid "➕ Add folder"
 msgstr ""
 
 #: base/views.py:253
-msgid "➕ Добавить файл"
+msgid "➕ Add file"
 msgstr ""
 
 #: base/views.py:317
-msgid "Файл"
+#: env/lib/python3.11/site-packages/django/db/models/fields/files.py:231
+msgid "File"
 msgstr ""
 
 #: base/views.py:408
-msgid ""
-"Пожалуйста, отправьте файл, который вы хотите сохранить (вы можете отправить "
-"его в сообщении) 🗄"
+msgid "Please send the file you want to keep (you can send it by message) 🗄"
 msgstr ""
 
 #: base/views.py:456
-msgid "🗄 Файл"
+msgid "🗄 File"
 msgstr ""
 
 #: base/views.py:457
-msgid "💬 Заметка"
-msgstr ""
-
-#: base/views.py:504
-msgid "Ссылка"
+msgid "💬 Note"
 msgstr ""
 
 #: base/views.py:557
-msgid "➕ Добавить"
-msgstr ""
-
-#: bot_conf/settings.py:159
-msgid "Russian"
+msgid "➕ Add"
 msgstr ""
 
 #: bot_conf/settings.py:160
@@ -378,8 +367,6 @@ msgid_plural ""
 "%(show_value)d)."
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
 
 #: env/lib/python3.11/site-packages/django/core/validators.py:368
 #, python-format
@@ -391,8 +378,6 @@ msgid_plural ""
 "%(show_value)d)."
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
 
 #: env/lib/python3.11/site-packages/django/core/validators.py:387
 #: env/lib/python3.11/site-packages/django/forms/fields.py:292
@@ -406,8 +391,6 @@ msgid "Ensure that there are no more than %(max)s digit in total."
 msgid_plural "Ensure that there are no more than %(max)s digits in total."
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
 
 #: env/lib/python3.11/site-packages/django/core/validators.py:394
 #, python-format
@@ -415,8 +398,6 @@ msgid "Ensure that there are no more than %(max)s decimal place."
 msgid_plural "Ensure that there are no more than %(max)s decimal places."
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
 
 #: env/lib/python3.11/site-packages/django/core/validators.py:399
 #, python-format
@@ -426,8 +407,6 @@ msgid_plural ""
 "Ensure that there are no more than %(max)s digits before the decimal point."
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
 
 #: env/lib/python3.11/site-packages/django/core/validators.py:461
 #, python-format
@@ -669,10 +648,6 @@ msgstr ""
 msgid "Universally unique identifier"
 msgstr ""
 
-#: env/lib/python3.11/site-packages/django/db/models/fields/files.py:231
-msgid "File"
-msgstr ""
-
 #: env/lib/python3.11/site-packages/django/db/models/fields/files.py:377
 msgid "Image"
 msgstr ""
@@ -768,8 +743,6 @@ msgid_plural ""
 "Ensure this filename has at most %(max)d characters (it has %(length)d)."
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
 
 #: env/lib/python3.11/site-packages/django/forms/fields.py:552
 msgid "Please either submit a file or check the clear checkbox, not both."
@@ -826,8 +799,6 @@ msgid "Please submit %d or fewer forms."
 msgid_plural "Please submit %d or fewer forms."
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
 
 #: env/lib/python3.11/site-packages/django/forms/formsets.py:352
 #, python-format
@@ -835,8 +806,6 @@ msgid "Please submit %d or more forms."
 msgid_plural "Please submit %d or more forms."
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
 
 #: env/lib/python3.11/site-packages/django/forms/formsets.py:379
 #: env/lib/python3.11/site-packages/django/forms/formsets.py:386
@@ -916,8 +885,6 @@ msgid "%(size)d byte"
 msgid_plural "%(size)d bytes"
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
 
 #: env/lib/python3.11/site-packages/django/template/defaultfilters.py:838
 #, python-format
@@ -1285,8 +1252,6 @@ msgid "%d year"
 msgid_plural "%d years"
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
 
 #: env/lib/python3.11/site-packages/django/utils/timesince.py:10
 #, python-format
@@ -1294,8 +1259,6 @@ msgid "%d month"
 msgid_plural "%d months"
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
 
 #: env/lib/python3.11/site-packages/django/utils/timesince.py:11
 #, python-format
@@ -1303,8 +1266,6 @@ msgid "%d week"
 msgid_plural "%d weeks"
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
 
 #: env/lib/python3.11/site-packages/django/utils/timesince.py:12
 #, python-format
@@ -1312,8 +1273,6 @@ msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
 
 #: env/lib/python3.11/site-packages/django/utils/timesince.py:13
 #, python-format
@@ -1321,8 +1280,6 @@ msgid "%d hour"
 msgid_plural "%d hours"
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
 
 #: env/lib/python3.11/site-packages/django/utils/timesince.py:14
 #, python-format
@@ -1330,8 +1287,6 @@ msgid "%d minute"
 msgid_plural "%d minutes"
 msgstr[0] ""
 msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
 
 #: env/lib/python3.11/site-packages/django/views/csrf.py:110
 msgid "Forbidden"
@@ -1793,16 +1748,3 @@ msgstr ""
 msgctxt "stick"
 msgid "club"
 msgstr ""
-
-#, fuzzy
-#~| msgid "➕ Add file"
-#~ msgid "➕ Add folder"
-#~ msgstr "➕ Добавить файл"
-
-#~ msgid "➕ Add file"
-#~ msgstr "➕ Добавить файл"
-
-#, fuzzy
-#~| msgid "➕ Add file"
-#~ msgid "➕ Add"
-#~ msgstr "➕ Добавить файл"

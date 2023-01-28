@@ -47,7 +47,7 @@ def start(bot: TG_DJ_Bot, update: Update, user: User):
     __, (message, buttons) = fvs.show_list(self_root_folder.id)
 
     buttons.append([
-        InlineKeyboardButtonDJ(_('⚙️ Settings'), callback_data='us/se')
+        InlineKeyboardButtonDJ(_('⚙️ Настройки'), callback_data='us/se')
     ])
     return bot.edit_or_send(update, message, buttons)
 
@@ -55,7 +55,7 @@ def start(bot: TG_DJ_Bot, update: Update, user: User):
 class FolderViewSet(TelegaViewSet):
     telega_form = FolderForm
     queryset = Folder.objects.all()
-    viewset_name = gettext_lazy('Folder')
+    viewset_name = gettext_lazy('Папка')
     updating_fields = ['name']
     permission_classes = [CheckFolderPermission]
 
@@ -97,7 +97,7 @@ class FolderViewSet(TelegaViewSet):
             buttons = buttons[:-1]
             buttons.append([
                 InlineKeyboardButtonDJ(
-                    text=_('🔙 Return to folder'),
+                    text=_('🔙 Вернуться в папку'),
                     callback_data=self.gm_callback_data('show_list', model.parent.id)
                 )
             ])
@@ -122,7 +122,7 @@ class FolderViewSet(TelegaViewSet):
             mess += _(
                 'Папка: %(name)s\n'
                 'Подпапок: %(subfolder_amount)s\n'
-                'Файлов: %(files_amount)s\n'
+                'Файлы: %(files_amount)s\n'
                 'Общий доступ: %(shared)s\n'
                 'Изменена: %(dttm)s\n'
             ) % {
@@ -137,15 +137,15 @@ class FolderViewSet(TelegaViewSet):
             slvs = ShareLinkViewSet(telega_reverse('base:ShareLinkViewSet'))
 
             buttons = [
-                button_lambda(_('📝 Name'), self.gm_callback_data('change', model.pk, 'name')),
+                button_lambda(_('📝 Название'), self.gm_callback_data('change', model.pk, 'name')),
             ]
 
             if model.parent_id:
                 if self.user.id == model.user_id:
-                    buttons.append(button_lambda(_('🔗 General access'), slvs.gm_callback_data('show_list', model.pk,'')))
-                buttons.append(button_lambda(_('❌ Delete'), self.gm_callback_data('delete', model.pk)))
+                    buttons.append(button_lambda(_('🔗 Общий доступ'), slvs.gm_callback_data('show_list', model.pk,'')))
+                buttons.append(button_lambda(_('❌ Удалить'), self.gm_callback_data('delete', model.pk)))
 
-            buttons.append(button_lambda(_('🔙 Back'), self.gm_callback_data('show_list', model.pk)))
+            buttons.append(button_lambda(_('🔙 Назад'), self.gm_callback_data('show_list', model.pk)))
 
             return self.CHAT_ACTION_MESSAGE, (mess, buttons)
         else:
@@ -208,7 +208,7 @@ class FolderViewSet(TelegaViewSet):
         mess += _(
             'Папка: %(folder_name)s\n'
             'Подпапок: %(count_subfolder)d\n'
-            'Файлов: %(count_file)d\n'
+            'Файлы: %(count_file)d\n'
             'Добавленных файлов: %(count_share)d\n'
             'Изменена: %(date_change)s'
         ) % {
@@ -234,7 +234,7 @@ class FolderViewSet(TelegaViewSet):
             if current_folder.parent_id:
                 buttons.append([
                     InlineKeyboardButtonDJ(
-                        text=_('📝 Edit %(name)s') % {'name': current_folder.name},
+                        text=_('📝 Редакдировать %(name)s') % {'name': current_folder.name},
                         callback_data=self.gm_callback_data(
                             'show_elem', current_folder.pk
                         )
@@ -244,13 +244,13 @@ class FolderViewSet(TelegaViewSet):
             buttons += [
                 [
                     InlineKeyboardButtonDJ(
-                        text=_('➕ Add folder'),
+                        text=_('➕ Добавить папку'),
                         callback_data=self.gm_callback_data(
                             'create', 'parent', current_folder.pk
                         )
                     ),
                     InlineKeyboardButtonDJ(
-                        text=_('➕ Add file'),
+                        text=_('➕ Добавить файл'),
                         callback_data=FileViewSet(
                             telega_reverse('base:FileViewSet')
                         ).gm_callback_data('create', 'folder', current_folder.pk)
@@ -268,7 +268,7 @@ class FolderViewSet(TelegaViewSet):
 
             buttons.append([
                 InlineKeyboardButtonDJ(
-                    text=_('🔙 Back'),
+                    text=_('🔙 Назад'),
                     callback_data=self.gm_callback_data('show_list', return_show_folder_id)
                 )
             ])
@@ -314,7 +314,7 @@ class FolderViewSet(TelegaViewSet):
 class FileViewSet(TelegaViewSet):
     telega_form = FileForm
     queryset = File.objects.all()
-    viewset_name = gettext_lazy('File')
+    viewset_name = gettext_lazy('Файл')
     updating_fields = ['text', 'media_id']
     actions = ['create', 'change', 'delete', 'show_elem']
     permission_classes = [CheckFilePermission]
@@ -405,7 +405,7 @@ class FileViewSet(TelegaViewSet):
         __, (message, buttons) = super().generate_message_self_variant(field_name, str(mess), func_response,instance_id)
 
         if field_name == 'media_id':
-            mess += _('Please send the file you want to keep (you can send it by message) 🗄')
+            mess += _('Пожалуйста, отправьте файл, который вы хотите сохранить (вы можете отправить его в сообщении) 🗄')
         else:
             mess = message
 
@@ -419,7 +419,7 @@ class FileViewSet(TelegaViewSet):
             buttons = buttons[:-1]
             buttons.append([
                 InlineKeyboardButtonDJ(
-                    text=_('🔙 Back'),
+                    text=_('🔙 Назад'),
                     callback_data=FolderViewSet(telega_reverse('base:FolderViewSet')).gm_callback_data(
                         'show_list', model.folder.pk
                     )
@@ -453,14 +453,14 @@ class FileViewSet(TelegaViewSet):
 
         if has_change_permission:
             buttons += [
-                button_lambda(_('🗄 File'), self.gm_callback_data('change', model.id, 'media_id')),
-                button_lambda(_('💬 Note'), self.gm_callback_data('change', model.id, 'text')),
+                button_lambda(_('🗄 Файл'), self.gm_callback_data('change', model.id, 'media_id')),
+                button_lambda(_('💬 Заметка'), self.gm_callback_data('change', model.id, 'text')),
             ]
 
             if self.user.id == model.user_id:
-                buttons.append(button_lambda(_('🔗 General access'), slvs.gm_callback_data('show_list', '', model.id)))
+                buttons.append(button_lambda(_('🔗 Общий доступ'), slvs.gm_callback_data('show_list', '', model.id)))
 
-            buttons.append(button_lambda(_('❌ Delete'), self.gm_callback_data('delete', model.id)))
+            buttons.append(button_lambda(_('❌ Удалить'), self.gm_callback_data('delete', model.id)))
 
         mount_curr_folder_query = MountInstance.objects.filter(share_content__file_id=model.id, user=self.user)
 
@@ -469,7 +469,7 @@ class FileViewSet(TelegaViewSet):
         else:
             return_show_folder_id = model.folder_id
 
-        buttons.append(button_lambda(_('🔙 Back'), fvs.gm_callback_data('show_list', return_show_folder_id)))
+        buttons.append(button_lambda(_('🔙 Назад'), fvs.gm_callback_data('show_list', return_show_folder_id)))
 
         return buttons
 
@@ -501,7 +501,7 @@ class FileViewSet(TelegaViewSet):
 class ShareLinkViewSet(TelegaViewSet):
     telega_form = ShareLinkForm
     queryset = ShareLink.objects.all()
-    viewset_name = 'ShareLinkViewSet'
+    viewset_name = _('Ссылка')
     updating_fields = ['type_link', 'share_amount']
     foreign_filter_amount = 2  # [folder_id, file_id], only one field should be filled (if 2, then the first one used)
 
@@ -554,8 +554,8 @@ class ShareLinkViewSet(TelegaViewSet):
         print(f'return_button_callback {return_button_callback}')
 
         buttons += [
-            button_lambda(_('➕ Add'), self.gm_callback_data('create')),
-            button_lambda(_('🔙 Back'), return_button_callback),
+            button_lambda(_('➕ Добавить'), self.gm_callback_data('create')),
+            button_lambda(_('🔙 Назад'), return_button_callback),
         ]
 
         return self.CHAT_ACTION_MESSAGE, (mess, buttons)
