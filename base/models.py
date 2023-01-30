@@ -1,6 +1,7 @@
 from telegram_django_bot.models import TelegramUser
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from mptt.models import MPTTModel, TreeForeignKey
 
@@ -84,8 +85,8 @@ class ShareLink(models.Model):
     TYPE_SHOW_CHANGE = 'C'
     
     TYPES = (
-        (TYPE_SHOW_WITH_COPY, 'show with copy'),
-        (TYPE_SHOW_CHANGE, 'show and change')
+        (TYPE_SHOW_WITH_COPY, _('show with copy')),
+        (TYPE_SHOW_CHANGE, _('show and change'))
     )
 
     folder = models.ForeignKey(

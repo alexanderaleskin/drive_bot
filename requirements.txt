@@ -13,7 +13,7 @@ django-mptt==0.14.0
 ipython==8.8.0
 kombu==5.1.0
 psycopg2-binary==2.9.3
-uwsgi==2.0.20
 redis==3.3.11
+uwsgi==2.0.20
 python-telegram-bot==13.14
 telegram_django_bot==0.0.11
