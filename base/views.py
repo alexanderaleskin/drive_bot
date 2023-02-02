@@ -20,6 +20,61 @@ from .permissions import CheckFolderPermission, CheckFilePermission
 
 
 @handler_decor()
+def select_folder(bot: TG_DJ_Bot, update: Update, user: User):
+    context = user.current_utrl_context
+    context.update({'location_mode': False})
+    user.save_context_in_db(context)
+    
+    if context['model_type'] == 'Folder':
+        portable_folder = Folder.objects.filter(
+            user_id=user.id,
+            pk=context['model_pk']
+        ).first()
+        select_folder = Folder.objects.filter(
+            user_id=user.id,
+            pk=context['select_folder_pk']
+        ).first()
+        
+        if portable_folder.pk != select_folder.pk:
+            portable_folder.parent = select_folder
+            portable_folder.save()
+    
+    else:
+        portable_file = File.objects.filter(
+            user_id=user.id,
+            pk=context['model_pk']
+        ).first()
+        select_folder = Folder.objects.filter(
+            user_id=user.id,
+            pk=context['select_folder_pk']
+        ).first()
+        portable_file.folder = select_folder
+        portable_file.save()
+
+    fvs = FolderViewSet(telega_reverse('base:FolderViewSet'), user=user)
+    __, (message, buttons) = fvs.show_list(select_folder.pk)
+
+    return bot.edit_or_send(update, message, buttons)
+
+
+@handler_decor()
+def change_location(bot: TG_DJ_Bot, update: Update, user: User):
+    self_root_folder = Folder.objects.filter(
+        user_id=user.pk,
+        parent_id__isnull=True
+    ).first()
+
+    context = user.current_utrl_context
+    context.update({'location_mode': True})
+    user.save_context_in_db(context)
+
+    fvs = FolderViewSet(telega_reverse('base:FolderViewSet'), user=user)
+    __, (message, buttons) = fvs.show_list(self_root_folder.id)
+
+    return bot.edit_or_send(update, message, buttons)
+
+
+@handler_decor()
 def start(bot: TG_DJ_Bot, update: Update, user: User):
     self_root_folder = Folder.objects.filter(
         user_id=user.pk,
@@ -42,6 +97,15 @@ def start(bot: TG_DJ_Bot, update: Update, user: User):
                 share_content=share_link,
                 defaults={'mount_folder': self_root_folder}
             )
+
+    context = {
+        'select_folder_pk': None,
+        'location_mode': False,
+        'source_folder_pk': None,
+        'model_pk': None,
+        'model_type': None
+    }
+    user.save_context_in_db(context)
 
     fvs = FolderViewSet(telega_reverse('base:FolderViewSet'), user=user)
     __, (message, buttons) = fvs.show_list(self_root_folder.id)
@@ -82,10 +146,10 @@ class FolderViewSet(TelegaViewSet):
             name += _('📁 %(model_name)s') % {'model_name': model.name}
         else:  # then File
             name += _(
-                '%(icon)s  %(model_text)'
+                '%(icon)s  %(model_text)s'
             ) % {
                 'icon': self.icon_format[model.message_format],
-                'model_text': model.text if model.text else model.message_format
+                'model_text': model.name if model.name else model.message_format
             }
         return name
 
@@ -134,12 +198,24 @@ class FolderViewSet(TelegaViewSet):
                 'shared': on if ShareLink.objects.filter(folder_id=model.pk).count() else off,
                 'dttm': model.last_modified.strftime("%d.%m.%Y %H:%M"),
             }
+            
+            context = self.user.current_utrl_context
+            context.update(
+                {
+                    'source_folder_pk': model.parent_id,
+                    'model_pk': model.pk,
+                    'model_type': 'Folder',
+                    'location_mode': False
+                }
+            )
+            self.user.save_context_in_db(context)
 
             button_lambda = lambda name, callback: [InlineKeyboardButtonDJ(text=name, callback_data=callback)]
             slvs = ShareLinkViewSet(telega_reverse('base:ShareLinkViewSet'))
 
             buttons = [
                 button_lambda(_('📝 Title'), self.gm_callback_data('change', model.pk, 'name')),
+                button_lambda(_('Изменить расположение'), 'change_location')
             ]
 
             if model.parent_id:
@@ -176,8 +252,21 @@ class FolderViewSet(TelegaViewSet):
         first_this_page = page * per_page * columns
         first_next_page = (page + 1) * per_page * columns
 
-        models = (subfolder_queryset + file_queryset + share_queryset)[first_this_page: first_next_page]
-        count_models = count_subfolder + count_file + count_share
+        context = self.user.current_utrl_context
+        context.update(
+            {
+                'select_folder_pk': current_folder.pk
+            }
+        )
+        self.user.save_context_in_db(context)
+        location_mode = context['location_mode']
+
+        if location_mode:
+            models = subfolder_queryset[first_this_page: first_next_page]
+            count_models = count_subfolder
+        else:
+            models = (subfolder_queryset + file_queryset + share_queryset)[first_this_page: first_next_page]
+            count_models = count_subfolder + count_file + count_share
 
         prev_page_button = InlineKeyboardButtonDJ(
             text=_(f'◀️️️'),
@@ -260,6 +349,27 @@ class FolderViewSet(TelegaViewSet):
                 ]
             ]
 
+        if location_mode:
+            mess = _(
+                'Для изменения расположения выберите папку и нажмите «Разместить в папке»\n'
+                'Выбрана папка: %(name)s\n'
+            ) % {'name': current_folder.name}
+
+            buttons = [
+                [
+                    InlineKeyboardButtonDJ(
+                        text=_('Разместить в папке %(name)s') % {'name': current_folder.name},
+                        callback_data='select_folder'
+                    ),
+                ],
+                [
+                    InlineKeyboardButtonDJ(
+                        text=_('❌ Отменить'),
+                        callback_data='start'
+                    )
+                ]
+            ]
+
         # return button
         if current_folder.parent_id:
             mount_curr_folder_query = MountInstance.objects.filter(share_content__folder_id=current_folder.id, user=self.user)
@@ -274,7 +384,7 @@ class FolderViewSet(TelegaViewSet):
                     callback_data=self.gm_callback_data('show_list', return_show_folder_id)
                 )
             ])
-
+        
         # buttons for folder, files and mount instances
         fvs = FileViewSet(telega_reverse('base:FileViewSet'))
         for it_m, model in enumerate(models, page * per_page * columns + 1):
@@ -457,6 +567,7 @@ class FileViewSet(TelegaViewSet):
             buttons += [
                 button_lambda(_('🗄 File'), self.gm_callback_data('change', model.id, 'media_id')),
                 button_lambda(_('💬 Note'), self.gm_callback_data('change', model.id, 'text')),
+                button_lambda(_('Изменить расположение'), 'change_location')
             ]
 
             if self.user.id == model.user_id:
@@ -480,6 +591,15 @@ class FileViewSet(TelegaViewSet):
 
         if model:
             buttons = self.generate_elem_buttons(model)
+            context = self.user.current_utrl_context
+            context.update(
+                {
+                    'model_type': 'File',
+                    'model_pk': model.pk,
+                    'source_folder_pk': model.folder.id
+                }
+            )
+            self.user.save_context_in_db(context)
             send_kwargs = {
                 'text': model.text,
                 'media_files_list': [model.media_id],
