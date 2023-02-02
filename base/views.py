@@ -38,7 +38,6 @@ def select_folder(bot: TG_DJ_Bot, update: Update, user: User):
         if portable_folder.pk != select_folder.pk:
             portable_folder.parent = select_folder
             portable_folder.save()
-    
     else:
         portable_file = File.objects.filter(
             user_id=user.id,
@@ -101,7 +100,6 @@ def start(bot: TG_DJ_Bot, update: Update, user: User):
     context = {
         'select_folder_pk': None,
         'location_mode': False,
-        'source_folder_pk': None,
         'model_pk': None,
         'model_type': None
     }
@@ -202,10 +200,8 @@ class FolderViewSet(TelegaViewSet):
             context = self.user.current_utrl_context
             context.update(
                 {
-                    'source_folder_pk': model.parent_id,
                     'model_pk': model.pk,
                     'model_type': 'Folder',
-                    'location_mode': False
                 }
             )
             self.user.save_context_in_db(context)
@@ -596,7 +592,6 @@ class FileViewSet(TelegaViewSet):
                 {
                     'model_type': 'File',
                     'model_pk': model.pk,
-                    'source_folder_pk': model.folder.id
                 }
             )
             self.user.save_context_in_db(context)
