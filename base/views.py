@@ -44,12 +44,7 @@ def select_folder(bot: TG_DJ_Bot, update: Update, user: User):
         
         if portable_folder.pk != select_folder.pk and not share_link:
             if select_folder.user_id != portable_folder.user_id:
-                subfolders = portable_folder.get_descendants(include_self=True)
-                
-                for folder in subfolders:
-                    folder.user = select_folder.user
-                    print(folder.user, select_folder.user)
-                    folder.save()
+                portable_folder.get_descendants(include_self=True).update(user=select_folder.user)
 
             portable_folder.parent = select_folder
             portable_folder.save()
