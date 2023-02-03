@@ -1,5 +1,4 @@
 import copy
-from datetime import datetime
 from uuid import uuid4
 from django.conf import settings
 
@@ -10,6 +9,7 @@ from telegram_django_bot.td_viewset import TelegaViewSet
 from telegram_django_bot.utils import handler_decor
 from telegram_django_bot.tg_dj_bot import TG_DJ_Bot
 
+from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy
 from django.db.models import Count, F
 
@@ -93,6 +93,8 @@ def change_location(bot: TG_DJ_Bot, update: Update, user: User):
         'model_type': model_type
     }
     user.save_context_in_db(context)
+    user.current_utrl_code_dttm = timezone.now()
+    user.save()
 
     fvs = FolderViewSet(telega_reverse('base:FolderViewSet'), user=user)
     __, (message, buttons) = fvs.show_list(self_root_folder.id)
@@ -241,6 +243,14 @@ class FolderViewSet(TelegaViewSet):
 
         current_folder = self._get_elem(folder_id)
         context = self.user.current_utrl_context
+
+        if context.get('location_mode'):
+            time_start = self.user.current_utrl_code_dttm
+            if (timezone.now() - time_start) > timezone.timedelta(seconds=3600):
+                self.user.save_context_in_db({})
+                __, (mess, buttons) = self.show_list(folder_id)
+
+                return self.CHAT_ACTION_MESSAGE, (mess, buttons)
         
         if context.get('location_mode'):
             file_queryset = []
