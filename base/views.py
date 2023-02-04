@@ -244,29 +244,26 @@ class FolderViewSet(TelegaViewSet):
         current_folder = self._get_elem(folder_id)
         context = self.user.current_utrl_context
 
+        subfolder_queryset= list(self.get_queryset().filter(parent_id=folder_id))
+        share_queryset = MountInstance.objects.filter(
+            user_id=self.user.id,
+            mount_folder=folder_id
+        ).select_related('share_content', 'share_content__folder',  'share_content__file')
+
         if context.get('location_mode'):
             time_start = self.user.current_utrl_code_dttm
             if (timezone.now() - time_start) > timezone.timedelta(seconds=3600):
-                self.user.save_context_in_db({})
-                __, (mess, buttons) = self.show_list(folder_id)
-
-                return self.CHAT_ACTION_MESSAGE, (mess, buttons)
+                context = {}
+                self.user.clear_status()
         
         if context.get('location_mode'):
             file_queryset = []
-            subfolder_queryset = list(self.get_queryset().filter(parent_id=folder_id))
-            share_queryset = list(MountInstance.objects.filter(
-                user_id=self.user.id,
-                mount_folder=folder_id,
+            share_queryset = list(share_queryset.filter(
                 share_content__file__isnull=True
-            ).select_related('share_content', 'share_content__folder'))
+            ))   
         else:
             file_queryset = list(File.objects.filter(folder_id=folder_id))
-            subfolder_queryset = list(self.get_queryset().filter(parent_id=folder_id))
-            share_queryset = list(MountInstance.objects.filter(
-                user_id=self.user.id,
-                mount_folder=folder_id
-            ).select_related('share_content', 'share_content__folder',  'share_content__file'))
+            share_queryset = list(share_queryset)
 
         count_subfolder = len(subfolder_queryset)
         count_file = len(file_queryset)
@@ -403,7 +400,7 @@ class FolderViewSet(TelegaViewSet):
         fvs = FileViewSet(telega_reverse('base:FileViewSet'))
         for it_m, model in enumerate(models, page * per_page * columns + 1):
             is_linked = False
-            if isinstance(model, MountInstance) and has_change_permission:
+            if isinstance(model, MountInstance):
                 is_linked = True
                 model = model.share_content.file or model.share_content.folder
 
@@ -605,14 +602,6 @@ class FileViewSet(TelegaViewSet):
 
         if model:
             buttons = self.generate_elem_buttons(model)
-            context = self.user.current_utrl_context
-            context.update(
-                {
-                    'model_type': 'File',
-                    'model_pk': model.pk,
-                }
-            )
-            self.user.save_context_in_db(context)
             send_kwargs = {
                 'text': model.text,
                 'media_files_list': [model.media_id],
