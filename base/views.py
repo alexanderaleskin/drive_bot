@@ -258,7 +258,7 @@ class FolderViewSet(TelegaViewSet):
             share_queryset = list(MountInstance.objects.filter(
                 user_id=self.user.id,
                 mount_folder=folder_id,
-                share_content__file=None
+                share_content__file__isnull=True
             ).select_related('share_content', 'share_content__folder'))
         else:
             file_queryset = list(File.objects.filter(folder_id=folder_id))
