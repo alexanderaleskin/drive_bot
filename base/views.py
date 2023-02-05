@@ -1,5 +1,7 @@
 import copy
 from uuid import uuid4
+import logging
+
 from django.conf import settings
 
 from telegram_django_bot.models import MESSAGE_FORMAT
@@ -360,7 +362,7 @@ class FolderViewSet(TelegaViewSet):
             elif first_next_page >= count_models:
                 buttons = [[prev_page_button]]
             else:
-                print(f'unreal situation {count_models}, \
+                logging.error(f'unreal situation {count_models}, \
                     {len(models)}, {first_this_page}, {first_next_page}')
 
         mess += _(
@@ -741,8 +743,6 @@ class ShareLinkViewSet(TelegaViewSet):
             return_button_callback = FileViewSet(telega_reverse('base:FileViewSet')).gm_callback_data(
                 'show_elem', self.foreign_filters[1]
             )
-
-        print(f'return_button_callback {return_button_callback}')
 
         buttons += [
             button_lambda(_('➕ Add'), self.gm_callback_data('create')),
