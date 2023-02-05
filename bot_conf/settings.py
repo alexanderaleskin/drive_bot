@@ -206,7 +206,7 @@ MEDIA_ROOT = '/web/media/'
 STATIC_ROOT = '/web/static/'
 
 
-TELEGRAM_USER_ID = os.environ.get('TELEGRAM_USER_ID')
+TELEGRAM_TEST_USER_IDS = os.environ.get('TELEGRAM_USER_ID', '').split(',')
 TELEGRAM_TOKEN = env.str('TELEGRAM_TOKEN', default='')
 MAIN_BOT_USERNAME = os.environ.get('TELEGRAM_BOT_NAME')
 TELEGRAM_LOG = env.str('TELEGRAM_LOG', default='/web/logs/bot.log')
