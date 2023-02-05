@@ -277,7 +277,7 @@ class FolderViewSet(TelegaViewSet):
 
             buttons = [
                 button_lambda(_('📝 Title'), self.gm_callback_data('change', model.pk, 'name')),
-                button_lambda(_('Изменить расположение'), f'change_location/{model.pk}/Folder')
+                button_lambda(_('🗺 Change location'), f'change_location/{model.pk}/Folder')
             ]
 
             if model.parent_id:
@@ -398,11 +398,12 @@ class FolderViewSet(TelegaViewSet):
         )
         if has_change_permission:
             if context.get('location_mode'):
-                folder_name = current_folder.name if current_folder.parent_id else 'Основная'
+                main_folder_name = _('Main')
+                folder_name = current_folder.name if current_folder.parent_id else main_folder_name
 
                 mess = _(
-                    'Для изменения расположения выберите папку и нажмите «Разместить в папке»\n'
-                    'Выбрана папка: %(name)s\n'
+                    'To change the location, select a folder and click «Place in Folder»\n'
+                    'Folder selected: %(name)s\n'
                 ) % {
                     'name': folder_name
                 }
@@ -410,13 +411,13 @@ class FolderViewSet(TelegaViewSet):
                 buttons += [
                     [
                         InlineKeyboardButtonDJ(
-                            text=_('✔️ Разместить в папке %(name)s') % {'name': folder_name},
+                            text=_('✔️ Place in a folder %(name)s') % {'name': folder_name},
                             callback_data=f'select_folder/{current_folder.pk}'
                         ),
                     ],
                     [
                         InlineKeyboardButtonDJ(
-                            text=_('❌ Отменить'),
+                            text=_('❌ Cancel'),
                             callback_data='start'
                         )
                     ]
@@ -647,7 +648,7 @@ class FileViewSet(TelegaViewSet):
             buttons += [
                 button_lambda(_('🗄 File'), self.gm_callback_data('change', model.id, 'media_id')),
                 button_lambda(_('💬 Note'), self.gm_callback_data('change', model.id, 'text')),
-                button_lambda(_('Изменить расположение'), f'change_location/{model.id}/File')
+                button_lambda(_('🗺 Change location'), f'change_location/{model.id}/File')
             ]
 
             if self.user.id == model.user_id:
