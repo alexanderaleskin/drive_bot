@@ -42,14 +42,14 @@ msgstr "Меню ShareLink"
 
 #: base/forms.py:49
 msgid "Main folder could not be shared"
-msgstr "Главной папкой нельзя поделиться"
+msgstr "Основной папкой нельзя поделиться"
 
 #: base/forms.py:63
 msgid ""
 "There is mounted or shared folders instances in descendants. You could not "
 "share this folder. \n"
 msgstr ""
-"В дочерних папках есть смонтированные экземпляры. Вы не могли бы поделиться "
+"В связанных папках есть публичные папки. Вы не можете поделиться "
 "этим  папка. \n"
 
 #: base/models.py:88
@@ -67,7 +67,7 @@ msgid ""
 "%(folder_title)s. </b>\n"
 "\n"
 msgstr ""
-"<b>У вас нет разрешения на изменение местоположения %(title)s в папку "
+"<b>У вас нет разрешения на изменение расположения %(title)s в папку "
 "%(folder_title)s. </b>\n"
 "\n"
 

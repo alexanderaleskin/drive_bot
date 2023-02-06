@@ -14,6 +14,11 @@ class FileForm(td_forms.TelegaModelForm):
 
         labels = {
             'text': _('Note'),
+            'name': _('Name'),
+        }
+
+        widgets = {
+            'name': forms.HiddenInput(),
         }
 
 
@@ -34,11 +39,18 @@ class ShareLinkForm(td_forms.TelegaModelForm):
 
     class Meta:
         model = ShareLink
-        fields = ['file', 'folder', 'type_link', 'share_amount','share_code']
+        fields = ['folder', 'file', 'type_link', 'share_amount','share_code']
 
         widgets = {
+            'folder': forms.HiddenInput(),
+            'file': forms.HiddenInput(),
             'share_code': forms.HiddenInput(),
         }
+
+        # labels = {
+        #     'type_link': _('How to share'),
+        #     'share_amount': _('Share with amount'),
+        # }
 
 
     def clean(self):

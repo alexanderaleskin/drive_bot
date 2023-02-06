@@ -4,7 +4,7 @@ import logging
 
 from django.conf import settings
 
-from telegram_django_bot.models import MESSAGE_FORMAT
+from telegram_django_bot.models import MESSAGE_FORMAT, ActionLog
 from telegram_django_bot.routing import telega_reverse
 from telegram_django_bot.telegram_lib_redefinition import InlineKeyboardButtonDJ, InlineKeyboardMarkupDJ
 from telegram_django_bot.td_viewset import TelegaViewSet
@@ -163,6 +163,20 @@ def start(bot: TG_DJ_Bot, update: Update, user: User):
         parent_id__isnull=True
     ).first()
 
+    if user.date_joined > (timezone.now() - timezone.timedelta(seconds=1)):
+        message = _(
+            'Hi! 🤖\n'
+            '\n'
+            'I will help you to store and manage data like Yandex disk or Google drive does it. '
+            'Now, you could store your files in Telegram in different folders and shared it with others.\n'
+            '\n'
+            'Similar to self chat but more useful for work in team or store different content in different areas.\n'
+            '\n'
+            'Try it!'
+            
+        )
+        bot.edit_or_send(update, message)
+
     if update.message and update.message.text.startswith('/start') and \
             len(update.message.text) > 6:
         share_code = update.message.text.split()[-1]
@@ -196,20 +210,6 @@ class FolderViewSet(TelegaViewSet):
     updating_fields = ['name']
     permission_classes = [CheckFolderPermission]
 
-    icon_format = {
-        MESSAGE_FORMAT.TEXT: '📜',
-        MESSAGE_FORMAT.PHOTO: '📷',
-        MESSAGE_FORMAT.DOCUMENT: '📋',
-        MESSAGE_FORMAT.AUDIO: '🔊',
-        MESSAGE_FORMAT.VIDEO: '🎥',
-        MESSAGE_FORMAT.GIF: '📺',
-        MESSAGE_FORMAT.VOICE: '🗣',
-        MESSAGE_FORMAT.VIDEO_NOTE: '🎬',
-        MESSAGE_FORMAT.STICKER: '🎃',
-        MESSAGE_FORMAT.LOCATION: '🗺',
-        MESSAGE_FORMAT.GROUP_MEDIA: '📽'
-    }
-
     def get_pretty_model_name(self, model, is_linked=False):
         name = ''
         if is_linked:
@@ -218,12 +218,10 @@ class FolderViewSet(TelegaViewSet):
         if isinstance(model, Folder):
             name += _('📁 %(model_name)s') % {'model_name': model.name}
         else:  # then File
-            name += _(
-                '%(icon)s  %(model_text)s'
-            ) % {
-                'icon': self.icon_format[model.message_format],
-                'model_text': model.name if model.name else model.message_format
-            }
+            name += model.get_name()
+
+        if getattr(model, 'shared_amount', 0):
+            name = '🌍' + name
         return name
 
     def delete(self, model_or_pk, is_confirmed=False):
@@ -252,25 +250,38 @@ class FolderViewSet(TelegaViewSet):
 
         return self.create_or_update_helper(field, value, 'create', initial_data=initial_data)
 
+    def generate_show_fields(self, model, full_show=False, **kwargs):
+        mess = _(
+            '📂 Folder: %(folder_name)s\n'
+            '\n'
+            '<i>🗂 Subfolder: %(count_subfolder)d\n'
+            '📑 Files: %(count_file)d\n'
+            '🔗 Shared content: %(count_share)d\n'
+            '🕑 Last change: %(date_change)s</i>\n'
+        ) % {
+            'folder_name': model.get_path(self.user.id),
+            'count_subfolder': kwargs.get('count_subfolder', self.get_queryset().filter(parent_id=model.pk).count()),
+            'count_file': kwargs.get('count_file', File.objects.filter(folder_id=model.pk).count()),
+            'count_share': kwargs.get('count_share', MountInstance.objects.filter(mount_folder=model.id).count()),
+            'date_change': model.last_modified.strftime("%d.%m.%Y %H:%M")
+        }
+
+        if full_show:
+            mess += (
+                '\n'
+                'Public folder: %(shared)s\n'
+            ) % {
+                'shared': _('🌍 Yes') if ShareLink.objects.filter(folder_id=model.pk).count() else _('self'),
+            }
+
+        return mess
+
     def show_elem(self, model_or_pk, mess=''):
         model = self._get_elem(model_or_pk)
-        off = _('OFF')
-        on = _('ON')
 
         if model:
-            mess += _(
-                'Folder: %(name)s\n'
-                'Subfolder: %(subfolder_amount)s\n'
-                'Files: %(files_amount)s\n'
-                'General access: %(shared)s\n'
-                'Changed: %(dttm)s\n'
-            ) % {
-                'name': model.name,
-                'subfolder_amount': self.get_queryset().filter(parent_id=model.pk).count(),
-                'files_amount': File.objects.filter(folder_id=model.pk).count(),
-                'shared': on if ShareLink.objects.filter(folder_id=model.pk).count() else off,
-                'dttm': model.last_modified.strftime("%d.%m.%Y %H:%M"),
-            }
+
+            mess += self.generate_show_fields(model, full_show=True)
 
             button_lambda = lambda name, callback: [InlineKeyboardButtonDJ(text=name, callback_data=callback)]
             slvs = ShareLinkViewSet(telega_reverse('base:ShareLinkViewSet'))
@@ -301,7 +312,9 @@ class FolderViewSet(TelegaViewSet):
         ).first()
         context = self.user.current_utrl_context
 
-        subfolder_queryset= list(self.get_queryset().filter(parent_id=folder_id))
+        subfolder_queryset= list(
+            self.get_queryset().filter(parent_id=folder_id).annotate(shared_amount=Count('sharelinks__id'))
+        )
         share_queryset = MountInstance.objects.filter(
             user_id=self.user.id,
             mount_folder=folder_id
@@ -319,7 +332,9 @@ class FolderViewSet(TelegaViewSet):
                 share_content__file__isnull=True
             ))   
         else:
-            file_queryset = list(File.objects.filter(folder_id=folder_id))
+            file_queryset = list(
+                File.objects.filter(folder_id=folder_id).annotate(shared_amount=Count('sharelinks__id'))
+            )
             share_queryset = list(share_queryset)
 
         count_subfolder = len(subfolder_queryset)
@@ -365,19 +380,7 @@ class FolderViewSet(TelegaViewSet):
                 logging.error(f'unreal situation {count_models}, \
                     {len(models)}, {first_this_page}, {first_next_page}')
 
-        mess += _(
-            'Folder: %(folder_name)s\n'
-            'Subfolder: %(count_subfolder)d\n'
-            'Files: %(count_file)d\n'
-            'Added files: %(count_share)d\n'
-            'Changed: %(date_change)s'
-        ) % {
-            'folder_name': current_folder.name,
-            'count_subfolder': count_subfolder,
-            'count_file': count_file,
-            'count_share': count_share,
-            'date_change': current_folder.last_modified.strftime("%d.%m.%Y %H:%M")
-        }
+        mess += self.generate_show_fields(current_folder)
 
         # static buttons for changes creating
         if self.user.id == current_folder.user_id:
@@ -391,7 +394,7 @@ class FolderViewSet(TelegaViewSet):
             ).count()
 
         edit_button = InlineKeyboardButtonDJ(
-            text=_('📝 %(name)s') % {'name': current_folder.name},
+            text=_('⚙️ %(name)s') % {'name': current_folder.name},
             callback_data=self.gm_callback_data(
                 'show_elem', current_folder.pk
             )
@@ -426,13 +429,13 @@ class FolderViewSet(TelegaViewSet):
 
                 action_button_line = [
                     InlineKeyboardButtonDJ(
-                        text=_('➕ folder'),
+                        text=_('➕ Folder'),
                         callback_data=self.gm_callback_data(
                             'create', 'parent', current_folder.pk
                         )
                     ),
                     InlineKeyboardButtonDJ(
-                        text=_('➕ file'),
+                        text=_('➕ File'),
                         callback_data=FileViewSet(
                             telega_reverse('base:FileViewSet')
                         ).gm_callback_data('create', 'folder', current_folder.pk)
@@ -488,21 +491,6 @@ class FolderViewSet(TelegaViewSet):
 
         return self.CHAT_ACTION_MESSAGE, (mess, buttons)
 
-    # def generate_message_self_variant(
-    #     self, field_name, mess='', func_response='create',instance_id=None):
-    #     __, (message, buttons) = super().generate_message_self_variant(
-    #         field_name, str(mess), func_response, instance_id
-    #     )
-    #
-    #     if field_name == 'name':
-    #         mess += _(
-    #             'Введите название папки 📁'
-    #         )
-    #     else:
-    #         mess = message
-    #
-    #     return self.CHAT_ACTION_MESSAGE, (mess, buttons)
-
 
 class FileViewSet(TelegaViewSet):
     telega_form = FileForm
@@ -528,6 +516,7 @@ class FileViewSet(TelegaViewSet):
 
         if field == 'media_id' and (message := self.update.message):
             caption = True
+
             if message.photo:
                 initial_data = {
                     'message_format': MESSAGE_FORMAT.PHOTO,
@@ -537,11 +526,13 @@ class FileViewSet(TelegaViewSet):
                 initial_data = {
                     'message_format': MESSAGE_FORMAT.AUDIO,
                     'media_id': message.audio['file_id'],
+                    'name': message.document['file_name'],
                 }
             elif message.document:
                 initial_data = {
                     'message_format': MESSAGE_FORMAT.DOCUMENT,
                     'media_id': message.document['file_id'],
+                    'name': message.document['file_name'],
                 }
             elif message.sticker:
                 initial_data = {
@@ -552,6 +543,7 @@ class FileViewSet(TelegaViewSet):
                 initial_data = {
                     'message_format': MESSAGE_FORMAT.VIDEO,
                     'media_id': message.video['file_id'],
+                    'name': message.document['file_name'],
                 }
             elif message.animation:
                 initial_data = {
@@ -598,7 +590,7 @@ class FileViewSet(TelegaViewSet):
         __, (message, buttons) = super().generate_message_self_variant(field_name, str(mess), func_response,instance_id)
 
         if field_name == 'media_id':
-            mess += _('Please send the file you want to keep (you can send it in a message) 🗄')
+            mess += _('Please send the file or text(note) you want to keep (you can forward it also) 📇')
         else:
             mess = message
 
@@ -646,8 +638,9 @@ class FileViewSet(TelegaViewSet):
 
         if has_change_permission:
             buttons += [
-                button_lambda(_('🗄 File'), self.gm_callback_data('change', model.id, 'media_id')),
-                button_lambda(_('💬 Note'), self.gm_callback_data('change', model.id, 'text')),
+                    button_lambda(_('📇 Content'), self.gm_callback_data('change', model.id, 'media_id')) +
+                    button_lambda(_('✏️ Name'), self.gm_callback_data('change', model.id, 'name')),
+                button_lambda(_('💬 Text / Note'), self.gm_callback_data('change', model.id, 'text')),
                 button_lambda(_('🗺 Change location'), f'change_location/{model.id}/File')
             ]
 
@@ -695,9 +688,18 @@ class FileViewSet(TelegaViewSet):
 class ShareLinkViewSet(TelegaViewSet):
     telega_form = ShareLinkForm
     queryset = ShareLink.objects.all()
-    viewset_name = _('Share')
+    viewset_name = _('Share access')
     updating_fields = ['type_link', 'share_amount']
     foreign_filter_amount = 2  # [folder_id, file_id], only one field should be filled (if 2, then the first one used)
+
+    prechoice_fields_values = {
+        'share_amount': (
+            (1, '1'),
+            (2, '2'),
+            (5, '5'),
+            (100000000, _('All')),
+        )
+    }
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -727,7 +729,14 @@ class ShareLinkViewSet(TelegaViewSet):
         return self.create_or_update_helper(field, value, 'create', initial_data=initial_data)
 
     def generate_show_fields(self, model, full_show=False):
-        mess = super().generate_show_fields(model, full_show)
+        mess = ''
+
+        if model.folder:
+            mess += _('📂 <b>Folder</b>: %(path)s\n') % {'path': model.folder.get_path(self.user.id)}
+        else:
+            mess += _('📇 <b>File</b>: %(name)s\n') % {'name': model.file.get_name()}
+
+        mess += super().generate_show_fields(model, full_show)
         mess += f'https://t.me/{settings.MAIN_BOT_USERNAME}?start={model.share_code}'
         return mess
 
@@ -751,58 +760,3 @@ class ShareLinkViewSet(TelegaViewSet):
         ]
 
         return self.CHAT_ACTION_MESSAGE, (mess, buttons)
-
-    # def generate_elem_buttons(self, model, elem_per_raw=2):
-    #     buttons = []
-    #
-    #     if model.folder:
-    #         buttons += [
-    #             [
-    #                 InlineKeyboardButtonDJ(
-    #                     text=_('🔙 Назад в папку'),
-    #                     callback_data=FolderViewSet(
-    #                         telega_reverse('base:FolderViewSet')
-    #                     ).gm_callback_data('show_elem', model.folder.id)
-    #                 ),
-    #             ]
-    #         ]
-    #     elif model.file:
-    #         buttons += [
-    #             [
-    #                 InlineKeyboardButtonDJ(
-    #                     text=_('🔙 Назад в файл'),
-    #                     callback_data=FolderViewSet(
-    #                         telega_reverse('base:FileViewSet')
-    #                     ).gm_callback_data('show_elem', model.file.id)
-    #                 ),
-    #             ]
-    #         ]
-    #
-    #     buttons += [
-    #         [
-    #             InlineKeyboardButtonDJ(
-    #                 text=_('Type link'),
-    #                 callback_data=self.gm_callback_data(
-    #                     'change', model.id, 'type_link'
-    #                 )
-    #             ),
-    #         ],
-    #         [
-    #             InlineKeyboardButtonDJ(
-    #                 text=_('Share amount'),
-    #                 callback_data=self.gm_callback_data(
-    #                     'change', model.id, 'share_amount'
-    #                 )
-    #             ),
-    #         ],
-    #         [
-    #             InlineKeyboardButtonDJ(
-    #                 text=_('❌ Удалить'),
-    #                 callback_data=self.gm_callback_data(
-    #                     'delete', model.id
-    #                 )
-    #             ),
-    #         ],
-    #     ]
-    #
-    #     return buttons
