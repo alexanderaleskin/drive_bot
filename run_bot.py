@@ -1,4 +1,6 @@
 from telegram.ext import (
+    Filters,
+    MessageHandler,
     Updater,
 )
 import os, django
@@ -12,10 +14,13 @@ from telegram_django_bot.routing import RouterCallbackMessageCommandHandler
 from bot_conf.settings import TELEGRAM_TOKEN, TELEGRAM_LOG, DEBUG
 import logging
 
+from base.views import create_file_from_message
+
 
 def add_handlers(updater):
     dp = updater.dispatcher
     dp.add_handler(RouterCallbackMessageCommandHandler())
+    dp.add_handler(MessageHandler(Filters.all, create_file_from_message))
 
 
 def main():
