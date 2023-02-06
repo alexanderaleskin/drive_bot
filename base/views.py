@@ -22,6 +22,89 @@ from .forms import FileForm, FolderForm, ShareLinkForm
 from .permissions import CheckFolderPermission, CheckFilePermission
 
 
+def create_file_from_message(update, context):
+    user_id = update.effective_chat.id
+    message = update.message
+    
+    if message.photo:
+        initial_data = {
+            'message_format': MESSAGE_FORMAT.PHOTO,
+            'media_id': message.photo[-1]['file_id'],
+        }
+    elif message.audio:
+        initial_data = {
+            'message_format': MESSAGE_FORMAT.AUDIO,
+            'media_id': message.audio['file_id'],
+            'name': message.document['file_name'],
+        }
+    elif message.document:
+        initial_data = {
+            'message_format': MESSAGE_FORMAT.DOCUMENT,
+            'media_id': message.document['file_id'],
+            'name': message.document['file_name'],
+        }
+    elif message.sticker:
+        initial_data = {
+            'message_format': MESSAGE_FORMAT.STICKER,
+            'media_id': message.sticker['file_id'],
+        }
+    elif message.video:
+        initial_data = {
+            'message_format': MESSAGE_FORMAT.VIDEO,
+            'media_id': message.video['file_id'],
+            'name': message.document['file_name'],
+        }
+    elif message.animation:
+        initial_data = {
+            'message_format': MESSAGE_FORMAT.GIF,
+            'media_id': message.animation['file_id'],
+        }
+    elif message.voice:
+        initial_data = {
+            'message_format': MESSAGE_FORMAT.VOICE,
+            'media_id': message.voice['file_id'],
+        }
+    elif message.video_note:
+        initial_data = {
+            'message_format': MESSAGE_FORMAT.VIDEO_NOTE,
+            'media_id': message.video_note['file_id'],
+        }
+    elif message.media_group_id:
+        raise NotImplementedError('')
+
+    elif message.location:
+        initial_data = {
+            'message_format': MESSAGE_FORMAT.LOCATION,
+            'media_id': message.location['file_id'],
+        }
+    else:
+        initial_data = {
+            'message_format': MESSAGE_FORMAT.TEXT,
+            'media_id': message.text,
+            'text': message.text
+        }
+
+    user = User.objects.get(id=user_id)
+    root_folder = Folder.objects.get(
+        user_id=user.id,
+        parent__isnull=True,
+    )
+    file = File.objects.create(
+        user=user,
+        name=initial_data.get('name'),
+        message_format=initial_data.get('message_format'),
+        media_id=initial_data.get('media_id'),
+        folder=root_folder,
+        text=initial_data.get('text'),
+    )
+    file.save()
+
+    fvs = FolderViewSet(telega_reverse('base:FolderViewSet'), user=user)
+    __, (message, buttons) = fvs.show_list(root_folder)
+
+    return context.bot.edit_or_send(update, message, buttons)
+
+
 @handler_decor()
 def select_folder(bot: TG_DJ_Bot, update: Update, user: User):
     select_folder_pk = int(update.callback_query['data'].split('/')[1])
@@ -267,11 +350,11 @@ class FolderViewSet(TelegaViewSet):
         }
 
         if full_show:
-            mess += (
+            mess += _(
                 '\n'
                 'Public folder: %(shared)s\n'
             ) % {
-                'shared': _('🌍 Yes') if ShareLink.objects.filter(folder_id=model.pk).count() else _('self'),
+                'shared': _('🌍 Yes') if ShareLink.objects.filter(folder_id=model.pk).count() else _('🚫 No'),
             }
 
         return mess
