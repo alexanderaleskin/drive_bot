@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-02-06 17:52+0300\n"
+"POT-Creation-Date: 2023-02-06 23:23+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,9 +16,9 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
-"n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || "
-"(n%100>=11 && n%100<=14)? 2 : 3);\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
+"%100>=11 && n%100<=14)? 2 : 3);\n"
 
 #: base/forms.py:9
 msgid "Menu file"
@@ -64,7 +64,7 @@ msgstr "Только просмотр"
 msgid "Show and change"
 msgstr "Просмотр и изменение"
 
-#: base/views.py:206
+#: base/views.py:140
 #, python-format
 msgid ""
 "<b>You do not have permission for change location for %(title)s to folder "
@@ -75,7 +75,7 @@ msgstr ""
 "%(folder_title)s. </b>\n"
 "\n"
 
-#: base/views.py:251
+#: base/views.py:185
 msgid ""
 "Hi! 🤖\n"
 "\n"
@@ -94,29 +94,29 @@ msgstr ""
 "Google drive. Теперь вы можете хранить свои файлы в Telegram в разных папках "
 "и делиться ими с другими.\n"
 "\n"
-"Похоже на самостоятельный чат, но более полезен для работы в команде или "
-"хранения разного контента в разных областях.\n"
+"Похоже на чат с самим собой, но более полезен для работы в команде или хранения "
+"разного контента в разных местах.\n"
 "\n"
-"Попробуй это!"
+"Попробуй!"
 
-#: base/views.py:284
+#: base/views.py:218
 msgid "⚙️ Settings"
 msgstr "⚙️ Настройки"
 
-#: base/views.py:292
+#: base/views.py:226
 msgid "Folder"
 msgstr "Папка"
 
-#: base/views.py:302
+#: base/views.py:236
 #, python-format
 msgid "📁 %(model_name)s"
 msgstr "📁 %(model_name)s"
 
-#: base/views.py:318
+#: base/views.py:252
 msgid "🔙 Return to folder"
 msgstr "🔙 Вернуться в папку"
 
-#: base/views.py:338
+#: base/views.py:272
 #, python-format
 msgid ""
 "📂 Folder: %(folder_name)s\n"
@@ -132,62 +132,62 @@ msgstr ""
 "🔗 Общий контент: %(count_share)d\n"
 "🕑 Последнее изменение: %(date_change)s</i>\n"
 
-#: base/views.py:354
+#: base/views.py:288
 #, python-format
 msgid ""
 "\n"
 "Public folder: %(shared)s\n"
 msgstr ""
 "\n"
-"Папка публичная: %(shared)s\n"
+"Публичная папка: %(shared)s\n"
 
-#: base/views.py:357
+#: base/views.py:291
 msgid "🌍 Yes"
 msgstr "🌍 Да"
 
-#: base/views.py:357
+#: base/views.py:291
 msgid "🚫 No"
 msgstr "🚫 Нет"
 
-#: base/views.py:373
+#: base/views.py:307
 msgid "📝 Title"
 msgstr "📝 Название"
 
-#: base/views.py:374 base/views.py:727
+#: base/views.py:308 base/views.py:661
 msgid "🗺 Change location"
 msgstr "🗺 Изменить расположение"
 
-#: base/views.py:379 base/views.py:731
+#: base/views.py:313 base/views.py:665
 msgid "🔗 General access"
 msgstr "🔗 Общий доступ"
 
-#: base/views.py:380 base/views.py:733
+#: base/views.py:314 base/views.py:667
 msgid "❌ Delete"
 msgstr "❌ Удалить"
 
-#: base/views.py:382 base/views.py:547 base/views.py:690 base/views.py:742
-#: base/views.py:842
+#: base/views.py:316 base/views.py:481 base/views.py:624 base/views.py:676
+#: base/views.py:776
 msgid "🔙 Back"
 msgstr "🔙 Назад"
 
-#: base/views.py:439
+#: base/views.py:373
 msgid "◀️️️"
 msgstr "◀️️️"
 
-#: base/views.py:447
+#: base/views.py:381
 msgid "▶️️"
 msgstr "▶️️"
 
-#: base/views.py:480
+#: base/views.py:414
 #, python-format
 msgid "⚙️ %(name)s"
 msgstr "⚙️ %(name)s"
 
-#: base/views.py:487
+#: base/views.py:421
 msgid "Main"
 msgstr "Основная"
 
-#: base/views.py:491
+#: base/views.py:425
 #, python-format
 msgid ""
 "To change the location, select a folder and click «Place in Folder»\n"
@@ -196,28 +196,28 @@ msgstr ""
 "Для изменения расположения выберите папку и нажмите «Разместить в папке»\n"
 "Выбрана папка: %(name)s\n"
 
-#: base/views.py:500
+#: base/views.py:434
 #, python-format
 msgid "✔️ Place in a folder %(name)s"
 msgstr "✔️ Разместить в папке %(name)s"
 
-#: base/views.py:506
+#: base/views.py:440
 msgid "❌ Cancel"
 msgstr "❌ Отменить"
 
-#: base/views.py:515
+#: base/views.py:449
 msgid "➕ Folder"
 msgstr "➕ Папка"
 
-#: base/views.py:521
+#: base/views.py:455
 msgid "➕ File"
 msgstr "➕ Файл"
 
-#: base/views.py:581
+#: base/views.py:515
 msgid "File"
 msgstr "Файл"
 
-#: base/views.py:676
+#: base/views.py:610
 msgid ""
 "Please send the file or text(note) you want to keep (you can forward it "
 "also) 📇"
@@ -225,37 +225,37 @@ msgstr ""
 "Пожалуйста, отправьте файл или текст (заметку), который вы хотите сохранить "
 "(вы также можете переслать его) 📇"
 
-#: base/views.py:724
+#: base/views.py:658
 msgid "📇 Content"
 msgstr "📇 Контент"
 
-#: base/views.py:725
+#: base/views.py:659
 msgid "✏️ Name"
 msgstr "✏️ Название"
 
-#: base/views.py:726
+#: base/views.py:660
 msgid "💬 Text / Note"
 msgstr "💬 Заметка"
 
-#: base/views.py:774
+#: base/views.py:708
 msgid "Share access"
 msgstr "Поделиться доступом"
 
-#: base/views.py:783
+#: base/views.py:717
 msgid "All"
 msgstr "Все"
 
-#: base/views.py:818
+#: base/views.py:752
 #, python-format
 msgid "📂 <b>Folder</b>: %(path)s\n"
 msgstr "📂 <b>Папка</b>: %(path)s\n"
 
-#: base/views.py:820
+#: base/views.py:754
 #, python-format
 msgid "📇 <b>File</b>: %(name)s\n"
 msgstr "📇 <b>Файл</b>: %(name)s\n"
 
-#: base/views.py:841
+#: base/views.py:775
 msgid "➕ Add"
 msgstr "➕ Добавить"
 

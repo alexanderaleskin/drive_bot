@@ -22,21 +22,21 @@ from .forms import FileForm, FolderForm, ShareLinkForm
 from .permissions import CheckFolderPermission, CheckFilePermission
 
 
-def create_file_from_message(update, context):
-    user = User.objects.get(id=update.effective_chat.id)
+@handler_decor()
+def create_file_from_message(bot: TG_DJ_Bot, update: Update, user: User):
     root_folder = Folder.objects.get(
         user_id=user.id,
         parent__isnull=True
     )
     
-    fl = FileViewSet(telega_reverse('base:FileViewSet'), update=update, user=user)
+    fl = FileViewSet(telega_reverse('base:FileViewSet'), update=update, user=user, bot=bot)
     fl.create('folder', root_folder.pk)
     fl.create('media_id', '')
 
     fvs = FolderViewSet(telega_reverse('base:FolderViewSet'), user=user)
     __, (message, buttons) = fvs.show_list(root_folder.pk)
 
-    return context.bot.edit_or_send(update, message, buttons)
+    return bot.edit_or_send(update, message, buttons)
 
 
 @handler_decor()
