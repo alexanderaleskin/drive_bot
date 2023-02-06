@@ -217,5 +217,3 @@ TELEGRAM_ROOT_UTRLCONF = 'bot_conf.utrls'
 TELEGRAM_BOT_MAIN_MENU_CALLBACK = 'main_menu'  # usually you need return button to main menu
 
 # TIME_FORMAT = '%H:%M'
-
-
