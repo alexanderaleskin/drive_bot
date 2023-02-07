@@ -208,6 +208,7 @@ class TestFolderViewSet(TD_TestCase):
         self.assertEqual(len(buttons), 2)
 
         __, (mess, buttons) = self.fvs_user2.show_elem(folder.pk)
+        # buttons: edit_title, change_location, delete_but, back_but
         status = mess.splitlines()[-1].strip()
         self.assertEqual(status, 'Public folder: 🌍 Yes')
         self.assertEqual(len(buttons), 4)
