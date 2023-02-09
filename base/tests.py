@@ -13,12 +13,17 @@ class TestFolderViewSet(TD_TestCase):
         user_id = int(settings.TELEGRAM_TEST_USER_IDS[0])
         self.user = User.objects.create(
             id=user_id,
-            username=user_id
+            username=user_id,
         )
         user_id2 = int(settings.TELEGRAM_TEST_USER_IDS[1]) 
         self.user2 = User.objects.create(
             id=user_id2,
             username=user_id2,
+        )
+        user_id3 = int(settings.TELEGRAM_TEST_USER_IDS[2])
+        self.user3 = User.objects.create(
+            id=user_id3,
+            username=user_id3,
         )
         self.fvs = FolderViewSet(
             telega_reverse('base:FolderViewSet'),
@@ -197,12 +202,51 @@ class TestFolderViewSet(TD_TestCase):
         folder = self.create_folder_for_user()        
         share_link = self.create_share_link_for_user(folder.pk, 'S', 1)
 
+        __, (mess, buttons) = self.fvs_user2.show_list(self.root_folder_user2)
+        # buttons: add_folder_but, add_file_but
+        # the folder has not yet appeared for user2
+        self.assertEqual(len(buttons[0]), 2) 
+
         start_send = self.create_update(
             {'text': f'/start {share_link.share_code}'},
             user_id=self.user2.id
         )
         res_message = self.handle_update(start_send)
 
+        mount = MountInstance.objects.get(
+            share_content=share_link,
+            user_id=self.user2.id,
+        )
+        # check created mount
+        self.assertEqual(mount.user.id, self.user2.id)
+
+        test_send = self.create_update(
+            {'text': f'/start {share_link.share_code}'},
+            user_id=self.user3.id
+        )
+        message = self.handle_update(test_send)
+        
+        # check share_amount=1
+        test_mount = MountInstance.objects.filter(
+            share_content=share_link,
+            user_id=self.user3.id,
+        ).first()
+        self.assertEqual(None, test_mount)
+        
+        show_list_root_folder = self.create_update(
+            res_message.to_dict(),
+            {'data': f'fol/sl&{self.root_folder_user2.pk}'},
+            user_id=self.user2.id,
+        )
+        res_message = self.handle_update(show_list_root_folder)
+
+        buttons = res_message.reply_markup.to_dict()['inline_keyboard']
+        # buttons: add_folder_but, add_file_but, some_folder1
+        # the folder appeared at the user2
+        self.assertEqual(len(buttons[0]) + len(buttons[1]), 3)
+        self.assertEqual(buttons[0][0]['text'], '🔗📁 some_folder1')
+        self.assertEqual(buttons[0][0]['callback_data'], f'fol/sl&{folder.pk}')
+        
         __, (mess, buttons) = self.fvs_user2.show_list(folder.pk)
         # buttons: edit_folder_but, back_but
         self.assertEqual(len(buttons), 2)
