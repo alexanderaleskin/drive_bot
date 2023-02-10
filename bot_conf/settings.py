@@ -206,6 +206,7 @@ MEDIA_ROOT = '/web/media/'
 STATIC_ROOT = '/web/static/'
 
 
+TELEGRAM_TEST_USER_IDS = os.environ.get('TELEGRAM_USER_ID', '').split(',')
 TELEGRAM_TOKEN = env.str('TELEGRAM_TOKEN', default='')
 MAIN_BOT_USERNAME = os.environ.get('TELEGRAM_BOT_NAME')
 TELEGRAM_LOG = env.str('TELEGRAM_LOG', default='/web/logs/bot.log')
@@ -216,5 +217,3 @@ TELEGRAM_ROOT_UTRLCONF = 'bot_conf.utrls'
 TELEGRAM_BOT_MAIN_MENU_CALLBACK = 'main_menu'  # usually you need return button to main menu
 
 # TIME_FORMAT = '%H:%M'
-
-
