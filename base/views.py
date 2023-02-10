@@ -319,7 +319,7 @@ class FolderViewSet(TelegaViewSet):
         else:
             return self.generate_message_no_elem(model)
 
-    def show_list(self, folder_id, page=0, per_page=5, columns=1):
+    def show_list(self, folder_id, page=0, per_page=10, columns=1):
         """show list items"""
 
         current_folder = self._get_elem(folder_id)
@@ -587,9 +587,10 @@ class FileViewSet(TelegaViewSet):
                 }
             else:
                 caption = False
+                value = ' '
                 initial_data = {
                     'message_format': MESSAGE_FORMAT.TEXT,
-                    'media_id': '',
+                    'media_id': ' ',
                     'text': message.text,
                 }
 
