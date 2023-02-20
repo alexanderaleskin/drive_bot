@@ -587,10 +587,10 @@ class FileViewSet(TelegaViewSet):
                 }
             else:
                 caption = False
-                value = ' '
+                value = '-'
                 initial_data = {
                     'message_format': MESSAGE_FORMAT.TEXT,
-                    'media_id': ' ',
+                    'media_id': '-',
                     'text': message.text,
                 }
 

@@ -45,30 +45,30 @@ services:
       - postgres
 #      - redis
 
-
-  redis:
-    image: redis:6.2.1
-    restart: unless-stopped
-    environment:
-      - ALLOW_EMPTY_PASSWORD=yes
-    volumes:
-      - ../mounts/redis/:/data
-
-  celery_main:
-    extends:
-      file: common.yml
-      service: web_celery_base
-    command: /commands/celery_main.sh
-    depends_on:
-      - redis
-
-  celery_beat:
-    extends:
-      file: common.yml
-      service: web_celery_base
-    command: /commands/celery_beat.sh
-    depends_on:
-      - redis
+#
+#  redis:
+#    image: redis:6.2.1
+#    restart: unless-stopped
+#    environment:
+#      - ALLOW_EMPTY_PASSWORD=yes
+#    volumes:
+#      - ../mounts/redis/:/data
+#
+#  celery_main:
+#    extends:
+#      file: common.yml
+#      service: web_celery_base
+#    command: /commands/celery_main.sh
+#    depends_on:
+#      - redis
+#
+#  celery_beat:
+#    extends:
+#      file: common.yml
+#      service: web_celery_base
+#    command: /commands/celery_beat.sh
+#    depends_on:
+#      - redis
 
 #  flower:
 #    extends:

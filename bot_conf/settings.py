@@ -166,35 +166,35 @@ LOCALE_PATHS = [
 
 
 
-REDIS_HOST = env.str('REDIS_HOST', default='localhost')
-CELERY_BROKER_URL = 'redis://' + REDIS_HOST + ':6379'
-CELERY_RESULT_BACKEND = 'redis://' + REDIS_HOST + ':6379'
-CELERY_ACCEPT_CONTENT = ['application/json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = TIME_ZONE
-# CELERYD_CONCURRENCY = 2
-# CELERYD_PREFETCH_MULTIPLIER = 1
-BACKEND_QUEUE = env.str('BACKEND_QUEUE', default='backend_queue')
+# REDIS_HOST = env.str('REDIS_HOST', default='localhost')
+# CELERY_BROKER_URL = 'redis://' + REDIS_HOST + ':6379'
+# CELERY_RESULT_BACKEND = 'redis://' + REDIS_HOST + ':6379'
+# CELERY_ACCEPT_CONTENT = ['application/json']
+# CELERY_TASK_SERIALIZER = 'json'
+# CELERY_RESULT_SERIALIZER = 'json'
+# CELERY_TIMEZONE = TIME_ZONE
+# # CELERYD_CONCURRENCY = 2
+# # CELERYD_PREFETCH_MULTIPLIER = 1
+# BACKEND_QUEUE = env.str('BACKEND_QUEUE', default='backend_queue')
+#
+# CELERY_TASK_DEFAULT_QUEUE = BACKEND_QUEUE
+#
+# CELERY_QUEUES = {
+#     BACKEND_QUEUE: {
+#         "exchange": BACKEND_QUEUE,
+#         "routing_key": BACKEND_QUEUE,
+#     }
+# }
 
-CELERY_TASK_DEFAULT_QUEUE = BACKEND_QUEUE
+# BEAT_SCHEDULE = {
+#     # 'task-create_triggers': {
+#     #     'task': 'telegram_django_bot.tasks.create_triggers',
+#     #     'schedule': crontab(minute='*/12'),
+#     #     'options': {'queue': BACKEND_QUEUE}
+#     # },
+# }
 
-CELERY_QUEUES = {
-    BACKEND_QUEUE: {
-        "exchange": BACKEND_QUEUE,
-        "routing_key": BACKEND_QUEUE,
-    }
-}
-
-BEAT_SCHEDULE = {
-    # 'task-create_triggers': {
-    #     'task': 'telegram_django_bot.tasks.create_triggers',
-    #     'schedule': crontab(minute='*/12'),
-    #     'options': {'queue': BACKEND_QUEUE}
-    # },
-}
-
-CELERY_BEAT_SCHEDULE = deepcopy(BEAT_SCHEDULE)
+# CELERY_BEAT_SCHEDULE = deepcopy(BEAT_SCHEDULE)
 
 
 
