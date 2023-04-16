@@ -1,7 +1,7 @@
 from django.urls import re_path
 
 from .views import start, change_location, select_folder, FileViewSet, FolderViewSet, ShareLinkViewSet
-from telegram_django_bot.td_viewset import UserViewSet
+from telegram_django_bot.user_viewset import UserViewSet
 
 
 urlpatterns = [

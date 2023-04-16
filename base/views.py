@@ -1,10 +1,9 @@
 import copy
 from uuid import uuid4
-import logging
 
 from django.conf import settings
 
-from telegram_django_bot.models import MESSAGE_FORMAT, ActionLog
+from telegram_django_bot.models import MESSAGE_FORMAT
 from telegram_django_bot.routing import telega_reverse
 from telegram_django_bot.telegram_lib_redefinition import InlineKeyboardButtonDJ, InlineKeyboardMarkupDJ
 from telegram_django_bot.td_viewset import TelegaViewSet
@@ -111,7 +110,6 @@ def select_folder(bot: TG_DJ_Bot, update: Update, user: User):
                            portable_instance in mount_folder_instance.mount_folder.get_ancestors(include_self=True)
 
         has_change_location_permission = not exist_circle
-
 
     if has_change_location_permission:
         if mount_instance:
@@ -290,37 +288,27 @@ class FolderViewSet(TelegaViewSet):
             ) % {
                 'shared': _('🌍 Yes') if ShareLink.objects.filter(folder_id=model.pk).count() else _('🚫 No'),
             }
-
         return mess
 
-    def show_elem(self, model_or_pk, mess=''):
-        model = self._get_elem(model_or_pk)
+    def gm_show_elem_create_buttons(self, model, elem_per_raw=2):
+        button_lambda = lambda name, callback: [InlineKeyboardButtonDJ(text=name, callback_data=callback)]
+        slvs = ShareLinkViewSet(telega_reverse('base:ShareLinkViewSet'))
 
-        if model:
+        buttons = [
+            button_lambda(_('📝 Title'), self.gm_callback_data('change', model.pk, 'name')),
+            button_lambda(_('🗺 Change location'), f'change_location/{model.pk}/Folder')
+        ]
 
-            mess += self.generate_show_fields(model, full_show=True)
+        if model.parent_id:
+            if self.user.id == model.user_id:
+                buttons.append(button_lambda(_('🔗 General access'), slvs.gm_callback_data('show_list', model.pk, '')))
+            buttons.append(button_lambda(_('❌ Delete'), self.gm_callback_data('delete', model.pk)))
 
-            button_lambda = lambda name, callback: [InlineKeyboardButtonDJ(text=name, callback_data=callback)]
-            slvs = ShareLinkViewSet(telega_reverse('base:ShareLinkViewSet'))
-
-            buttons = [
-                button_lambda(_('📝 Title'), self.gm_callback_data('change', model.pk, 'name')),
-                button_lambda(_('🗺 Change location'), f'change_location/{model.pk}/Folder')
-            ]
-
-            if model.parent_id:
-                if self.user.id == model.user_id:
-                    buttons.append(button_lambda(_('🔗 General access'), slvs.gm_callback_data('show_list', model.pk,'')))
-                buttons.append(button_lambda(_('❌ Delete'), self.gm_callback_data('delete', model.pk)))
-
-            buttons.append(button_lambda(_('🔙 Back'), self.gm_callback_data('show_list', model.pk)))
-
-            return self.CHAT_ACTION_MESSAGE, (mess, buttons)
-        else:
-            return self.generate_message_no_elem(model)
+        buttons.append(button_lambda(_('🔙 Back'), self.gm_callback_data('show_list', model.pk)))
+        return buttons
 
     def show_list(self, folder_id, page=0, per_page=10, columns=1):
-        """show list items"""
+        """show list items. Redefine as there is special logic for show list"""
 
         current_folder = self._get_elem(folder_id)
         mount_curr_folder_query = MountInstance.objects.filter(
@@ -359,43 +347,25 @@ class FolderViewSet(TelegaViewSet):
         count_share = len(share_queryset)
 
         mess = ''
-        buttons = []
         page = int(page)
-        
+
         first_this_page = page * per_page * columns
         first_next_page = (page + 1) * per_page * columns
-
-
         models = (subfolder_queryset + file_queryset + share_queryset)[first_this_page: first_next_page]
         count_models = count_subfolder + count_file + count_share
 
-        prev_page_button = InlineKeyboardButtonDJ(
-            text=_(f'◀️️️'),
-            callback_data=self.generate_message_callback_data(
-                self.command_routings['command_routing_show_list'],
-                folder_id,
-                str(page - 1)
-            )
+        self.foreign_filters = [folder_id]
+        # as gm_show_list_create_pagination called show_list with standart args and the show_list was redefined,
+        # this dirty hack with foreign_filters should be used (honestly, the gm_show_list_create_pagination should be
+        # rewritten)
+        buttons = self.gm_show_list_create_pagination(
+            page,
+            count_models,
+            first_this_page,
+            first_next_page,
+            per_page
         )
-        next_page_button = InlineKeyboardButtonDJ(
-            text=_(f'▶️️'),
-            callback_data=self.generate_message_callback_data(
-                self.command_routings['command_routing_show_list'],
-                folder_id,
-                str(page + 1)
-            )
-        )
-
-        if len(models) < count_models:
-            if (first_this_page > 0) and (first_next_page < count_models):
-                buttons = [[prev_page_button, next_page_button]]
-            elif first_this_page == 0:
-                buttons = [[next_page_button]]
-            elif first_next_page >= count_models:
-                buttons = [[prev_page_button]]
-            else:
-                logging.error(f'unreal situation {count_models}, \
-                    {len(models)}, {first_this_page}, {first_next_page}')
+        self.foreign_filters = []
 
         mess += self.generate_show_fields(current_folder)
 
@@ -693,20 +663,20 @@ class FileViewSet(TelegaViewSet):
         else:
             return self.generate_message_no_elem(model_or_pk)
 
-    def send_answer(self, chat_action, chat_action_args, utrl, user, *args, **kwargs):
+    def send_answer(self, chat_action, chat_action_args, utrl, *args, **kwargs):
         if chat_action in list(map(lambda x: x[0], MESSAGE_FORMAT.MESSAGE_FORMATS)):
             return self.bot.send_format_message(
                 message_format=chat_action,
                 **chat_action_args,
             )
         else:
-            return super().send_answer(chat_action, chat_action_args, utrl, user, *args, **kwargs)
+            return super().send_answer(chat_action, chat_action_args, utrl, *args, **kwargs)
 
 
 class ShareLinkViewSet(TelegaViewSet):
     telega_form = ShareLinkForm
     queryset = ShareLink.objects.all()
-    viewset_name = _('Share access')
+    viewset_name = gettext_lazy('Share access')
     updating_fields = ['type_link', 'share_amount']
     foreign_filter_amount = 2  # [folder_id, file_id], only one field should be filled (if 2, then the first one used)
 
@@ -715,7 +685,7 @@ class ShareLinkViewSet(TelegaViewSet):
             (1, '1'),
             (2, '2'),
             (5, '5'),
-            (100000000, _('All')),
+            (100000000, gettext_lazy('All')),
         )
     }
 

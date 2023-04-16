@@ -47,10 +47,10 @@ class ShareLinkForm(td_forms.TelegaModelForm):
             'share_code': forms.HiddenInput(),
         }
 
-        # labels = {
-        #     'type_link': _('How to share'),
-        #     'share_amount': _('Share with amount'),
-        # }
+        labels = {
+            'type_link': _('How to share'),
+            'share_amount': _('Share with amount'),
+        }
 
 
     def clean(self):
