@@ -5,7 +5,7 @@ from telegram_django_bot import forms as td_forms
 from .models import File, Folder, ShareLink, MountInstance
 
 
-class FileForm(td_forms.TelegaModelForm):
+class FileForm(td_forms.TelegramModelForm):
     form_name = _("Menu file")
 
     class Meta:
@@ -22,7 +22,7 @@ class FileForm(td_forms.TelegaModelForm):
         }
 
 
-class FolderForm(td_forms.TelegaModelForm):
+class FolderForm(td_forms.TelegramModelForm):
     form_name = _("Menu folder")
 
     class Meta:
@@ -34,7 +34,7 @@ class FolderForm(td_forms.TelegaModelForm):
         }
 
 
-class ShareLinkForm(td_forms.TelegaModelForm):
+class ShareLinkForm(td_forms.TelegramModelForm):
     form_name = _('Menu sharelink')
 
     class Meta:

@@ -4,9 +4,9 @@ from uuid import uuid4
 from django.conf import settings
 
 from telegram_django_bot.models import MESSAGE_FORMAT
-from telegram_django_bot.routing import telega_reverse
+from telegram_django_bot.routing import telegram_reverse
 from telegram_django_bot.telegram_lib_redefinition import InlineKeyboardButtonDJ, InlineKeyboardMarkupDJ
-from telegram_django_bot.td_viewset import TelegaViewSet
+from telegram_django_bot.td_viewset import TelegramViewSet
 from telegram_django_bot.utils import handler_decor
 from telegram_django_bot.tg_dj_bot import TG_DJ_Bot
 
@@ -28,11 +28,11 @@ def create_file_from_message(bot: TG_DJ_Bot, update: Update, user: User):
         parent__isnull=True
     )
     
-    fl = FileViewSet(telega_reverse('base:FileViewSet'), update=update, user=user, bot=bot)
+    fl = FileViewSet(telegram_reverse('base:FileViewSet'), update=update, user=user, bot=bot)
     fl.create('folder', root_folder.pk)
     fl.create('media_id', '')
 
-    fvs = FolderViewSet(telega_reverse('base:FolderViewSet'), user=user)
+    fvs = FolderViewSet(telegram_reverse('base:FolderViewSet'), user=user)
     __, (message, buttons) = fvs.show_list(root_folder.pk)
 
     return bot.edit_or_send(update, message, buttons)
@@ -142,7 +142,7 @@ def select_folder(bot: TG_DJ_Bot, update: Update, user: User):
             'folder_title': select_folder.name,
         }
 
-    fvs = FolderViewSet(telega_reverse('base:FolderViewSet'), user=user)
+    fvs = FolderViewSet(telegram_reverse('base:FolderViewSet'), user=user)
     __, (message, buttons) = fvs.show_list(select_folder_pk)
 
     return bot.edit_or_send(update, start_mess + message, buttons)
@@ -164,7 +164,7 @@ def change_location(bot: TG_DJ_Bot, update: Update, user: User):
     user.current_utrl_code_dttm = timezone.now()
     user.save()
 
-    fvs = FolderViewSet(telega_reverse('base:FolderViewSet'), user=user)
+    fvs = FolderViewSet(telegram_reverse('base:FolderViewSet'), user=user)
     __, (message, buttons) = fvs.show_list(self_root_folder.id)
 
     return bot.edit_or_send(update, message, buttons)
@@ -209,7 +209,7 @@ def start(bot: TG_DJ_Bot, update: Update, user: User):
                 defaults={'mount_folder': self_root_folder}
             )
 
-    fvs = FolderViewSet(telega_reverse('base:FolderViewSet'), user=user)
+    fvs = FolderViewSet(telegram_reverse('base:FolderViewSet'), user=user)
     __, (message, buttons) = fvs.show_list(self_root_folder.id)
 
     buttons.append([
@@ -218,8 +218,8 @@ def start(bot: TG_DJ_Bot, update: Update, user: User):
     return bot.edit_or_send(update, message, buttons)
 
 
-class FolderViewSet(TelegaViewSet):
-    telega_form = FolderForm
+class FolderViewSet(TelegramViewSet):
+    model_form = FolderForm
     queryset = Folder.objects.all()
     viewset_name = gettext_lazy('Folder')
     updating_fields = ['name']
@@ -240,7 +240,7 @@ class FolderViewSet(TelegaViewSet):
         return name
 
     def delete(self, model_or_pk, is_confirmed=False):
-        model = self._get_elem(model_or_pk)
+        model = self.get_orm_model(model_or_pk)
 
         if model:
             __, (mess, buttons) = super().delete(model_or_pk, is_confirmed)
@@ -253,9 +253,9 @@ class FolderViewSet(TelegaViewSet):
             ])
             return self.CHAT_ACTION_MESSAGE, (mess, buttons)
         else:
-            return self.generate_message_no_elem(model_or_pk)
+            return self.gm_no_elem(model_or_pk)
 
-    def create(self, field=None, value=None):
+    def create(self, field=None, value=None, initial_data=None):
         if field is None and value is None:
             self.user.clear_status(commit=False)
 
@@ -263,9 +263,10 @@ class FolderViewSet(TelegaViewSet):
         if field == 'parent' and value:
             initial_data = {'user': Folder.objects.get(id=value).user_id}  # created folder in folder is owned by same person as folder
 
-        return self.create_or_update_helper(field, value, 'create', initial_data=initial_data)
+        return super().create(field, value, initial_data)
+        # return self.create_or_update_helper(field, value, 'create', initial_data=initial_data)
 
-    def generate_show_fields(self, model, full_show=False, **kwargs):
+    def gm_show_elem_or_list_fields(self, model, is_elem=False, **kwargs):
         mess = _(
             '📂 Folder: %(folder_name)s\n'
             '\n'
@@ -281,7 +282,7 @@ class FolderViewSet(TelegaViewSet):
             'date_change': model.last_modified.strftime("%d.%m.%Y %H:%M")
         }
 
-        if full_show:
+        if is_elem:
             mess += _(
                 '\n'
                 'Public folder: %(shared)s\n'
@@ -292,7 +293,7 @@ class FolderViewSet(TelegaViewSet):
 
     def gm_show_elem_create_buttons(self, model, elem_per_raw=2):
         button_lambda = lambda name, callback: [InlineKeyboardButtonDJ(text=name, callback_data=callback)]
-        slvs = ShareLinkViewSet(telega_reverse('base:ShareLinkViewSet'))
+        slvs = ShareLinkViewSet(telegram_reverse('base:ShareLinkViewSet'))
 
         buttons = [
             button_lambda(_('📝 Title'), self.gm_callback_data('change', model.pk, 'name')),
@@ -310,7 +311,7 @@ class FolderViewSet(TelegaViewSet):
     def show_list(self, folder_id, page=0, per_page=10, columns=1):
         """show list items. Redefine as there is special logic for show list"""
 
-        current_folder = self._get_elem(folder_id)
+        current_folder = self.get_orm_model(folder_id)
         mount_curr_folder_query = MountInstance.objects.filter(
             share_content__folder_id=current_folder.id,
             user=self.user
@@ -367,7 +368,7 @@ class FolderViewSet(TelegaViewSet):
         )
         self.foreign_filters = []
 
-        mess += self.generate_show_fields(current_folder)
+        mess += self.gm_show_elem_or_list_fields(current_folder)
 
         # static buttons for changes creating
         if self.user.id == current_folder.user_id:
@@ -424,7 +425,7 @@ class FolderViewSet(TelegaViewSet):
                     InlineKeyboardButtonDJ(
                         text=_('➕ File'),
                         callback_data=FileViewSet(
-                            telega_reverse('base:FileViewSet')
+                            telegram_reverse('base:FileViewSet')
                         ).gm_callback_data('create', 'folder', current_folder.pk)
                     ),
                 ]
@@ -454,7 +455,7 @@ class FolderViewSet(TelegaViewSet):
             ])
         
         # buttons for folder, files and mount instances
-        fvs = FileViewSet(telega_reverse('base:FileViewSet'))
+        fvs = FileViewSet(telegram_reverse('base:FileViewSet'))
         items_buttons = []
         for it_m, model in enumerate(models, page * per_page * columns + 1):
             is_linked = False
@@ -479,23 +480,20 @@ class FolderViewSet(TelegaViewSet):
         return self.CHAT_ACTION_MESSAGE, (mess, buttons)
 
 
-class FileViewSet(TelegaViewSet):
-    telega_form = FileForm
+class FileViewSet(TelegramViewSet):
+    model_form = FileForm
     queryset = File.objects.all()
     viewset_name = gettext_lazy('File')
     updating_fields = ['text', 'media_id']
     actions = ['create', 'change', 'delete', 'show_elem']
     permission_classes = [CheckFilePermission]
 
-    def create(self, field=None, value=None):
-        if field is None and value is None:
-            self.user.clear_status(commit=False)
-
+    def create(self, field=None, value=None, initial_data=None):
         initial_data = {}
         if field == 'folder' and value:
             initial_data = {'user': Folder.objects.get(id=value).user_id}  # created file in folder is owned by same person as folder
 
-        return self.create_or_update_helper(field, value, 'create', initial_data=initial_data)
+        return super().create(field, value, initial_data)
 
     def create_or_update_helper(self, field, value, func_response='create', instance=None, initial_data=None):
 
@@ -574,8 +572,8 @@ class FileViewSet(TelegaViewSet):
 
         return super().create_or_update_helper(field, value, func_response, instance, initial_data)
 
-    def generate_message_self_variant(self, field_name, mess='', func_response='create', instance_id=None):
-        __, (message, buttons) = super().generate_message_self_variant(field_name, str(mess), func_response,instance_id)
+    def gm_self_variant(self, field_name, mess='', func_response='create', instance_id=None):
+        __, (message, buttons) = super().gm_self_variant(field_name, str(mess), func_response,instance_id)
 
         if field_name == 'media_id':
             mess += _('Please send the file or text(note) you want to keep (you can forward it also) 📇')
@@ -585,7 +583,7 @@ class FileViewSet(TelegaViewSet):
         return self.CHAT_ACTION_MESSAGE, (mess, buttons)
 
     def delete(self, model_or_pk, is_confirmed=False):
-        model = self._get_elem(model_or_pk)
+        model = self.get_orm_model(model_or_pk)
 
         if model:
             __, (mess, buttons) = super().delete(model_or_pk, is_confirmed)
@@ -593,21 +591,21 @@ class FileViewSet(TelegaViewSet):
             buttons.append([
                 InlineKeyboardButtonDJ(
                     text=_('🔙 Back'),
-                    callback_data=FolderViewSet(telega_reverse('base:FolderViewSet')).gm_callback_data(
+                    callback_data=FolderViewSet(telegram_reverse('base:FolderViewSet')).gm_callback_data(
                         'show_list', model.folder.pk
                     )
                 )
             ])
             return self.CHAT_ACTION_MESSAGE, (mess, buttons)
         else:
-            return self.generate_message_no_elem(model_or_pk)
+            return self.gm_no_elem(model_or_pk)
 
-    def generate_elem_buttons(self, model, elem_per_raw=2):
+    def gm_show_elem_create_buttons(self, model, elem_per_raw=2):
         buttons = []
 
         button_lambda = lambda name, callback: [InlineKeyboardButtonDJ(text=name, callback_data=callback)]
-        fvs = FolderViewSet(telega_reverse('base:FolderViewSet'))
-        slvs = ShareLinkViewSet(telega_reverse('base:ShareLinkViewSet'))
+        fvs = FolderViewSet(telegram_reverse('base:FolderViewSet'))
+        slvs = ShareLinkViewSet(telegram_reverse('base:ShareLinkViewSet'))
 
         if self.user.id == model.user_id:
             has_change_permission = True
@@ -649,10 +647,10 @@ class FileViewSet(TelegaViewSet):
         return buttons
 
     def show_elem(self, model_or_pk, mess=''):
-        model = self._get_elem(model_or_pk)
+        model = self.get_orm_model(model_or_pk)
 
         if model:
-            buttons = self.generate_elem_buttons(model)
+            buttons = self.gm_show_elem_create_buttons(model)
             send_kwargs = {
                 'text': model.text,
                 'media_files_list': [model.media_id],
@@ -661,7 +659,7 @@ class FileViewSet(TelegaViewSet):
             }
             return model.message_format, send_kwargs
         else:
-            return self.generate_message_no_elem(model_or_pk)
+            return self.gm_no_elem(model_or_pk)
 
     def send_answer(self, chat_action, chat_action_args, utrl, *args, **kwargs):
         if chat_action in list(map(lambda x: x[0], MESSAGE_FORMAT.MESSAGE_FORMATS)):
@@ -673,8 +671,8 @@ class FileViewSet(TelegaViewSet):
             return super().send_answer(chat_action, chat_action_args, utrl, *args, **kwargs)
 
 
-class ShareLinkViewSet(TelegaViewSet):
-    telega_form = ShareLinkForm
+class ShareLinkViewSet(TelegramViewSet):
+    model_form = ShareLinkForm
     queryset = ShareLink.objects.all()
     viewset_name = gettext_lazy('Share access')
     updating_fields = ['type_link', 'share_amount']
@@ -697,11 +695,7 @@ class ShareLinkViewSet(TelegaViewSet):
         else:
             return queryset.filter(file=self.foreign_filters[1], file__user_id=self.user.id)
 
-    def create(self, field=None, value=None):
-        
-        if field is None and value is None:
-            self.user.clear_status(commit=False)
-
+    def create(self, field=None, value=None, initial_data=None):
         initial_data = {
             'share_code': str(uuid4()),
         }
@@ -714,9 +708,9 @@ class ShareLinkViewSet(TelegaViewSet):
             initial_data['file'] = self.foreign_filters[1]
             initial_data['folder'] = ''
 
-        return self.create_or_update_helper(field, value, 'create', initial_data=initial_data)
+        return super().create(field, value, initial_data)
 
-    def generate_show_fields(self, model, full_show=False):
+    def gm_show_elem_or_list_fields(self, model, full_show=False, **kwargs):
         mess = ''
 
         if model.folder:
@@ -724,21 +718,21 @@ class ShareLinkViewSet(TelegaViewSet):
         else:
             mess += _('📇 <b>File</b>: %(name)s\n') % {'name': model.file.get_name()}
 
-        mess += super().generate_show_fields(model, full_show)
+        mess += super().gm_show_elem_or_list_fields(model, full_show)
         mess += f'https://t.me/{settings.MAIN_BOT_USERNAME}?start={model.share_code}'
         return mess
 
-    def show_list(self, page=0, per_page=10, columns=1):
-        __, (mess, buttons) = super().show_list(page, per_page, columns)
+    def show_list(self, page=0, per_page=10, columns=1, *args, **kwargs):
+        __, (mess, buttons) = super().show_list(page, per_page, columns, *args, **kwargs)
 
         button_lambda = lambda name, callback: [InlineKeyboardButtonDJ(text=name, callback_data=callback)]
 
         if self.foreign_filters[0]:
-            return_button_callback = FolderViewSet(telega_reverse('base:FolderViewSet')).gm_callback_data(
+            return_button_callback = FolderViewSet(telegram_reverse('base:FolderViewSet')).gm_callback_data(
                 'show_elem', self.foreign_filters[0]
             )
         else:
-            return_button_callback = FileViewSet(telega_reverse('base:FileViewSet')).gm_callback_data(
+            return_button_callback = FileViewSet(telegram_reverse('base:FileViewSet')).gm_callback_data(
                 'show_elem', self.foreign_filters[1]
             )
 

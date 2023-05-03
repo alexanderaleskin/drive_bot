@@ -1,5 +1,5 @@
 from django.conf import settings
-from telegram_django_bot.routing import telega_reverse
+from telegram_django_bot.routing import telegram_reverse
 from telegram_django_bot.test import TD_TestCase
 from telegram_django_bot.routing import RouterCallbackMessageCommandHandler
 
@@ -26,12 +26,12 @@ class TestFolderViewSet(TD_TestCase):
             username=user_id3,
         )
         self.fvs = FolderViewSet(
-            telega_reverse('base:FolderViewSet'),
+            telegram_reverse('base:FolderViewSet'),
             user=self.user,
             bot=self.test_callback_context.bot
         )
         self.fvs_user2 = FolderViewSet(
-            telega_reverse('base:FolderViewSet'),
+            telegram_reverse('base:FolderViewSet'),
             user=self.user2,
             bot=self.test_callback_context.bot
         )
@@ -62,7 +62,7 @@ class TestFolderViewSet(TD_TestCase):
 
     def create_share_link_for_user(self, folder_pk, type_link, share_amount):
         sl = ShareLinkViewSet(
-            telega_reverse('base:ShareLinkViewSet'),
+            telegram_reverse('base:ShareLinkViewSet'),
             user=self.user,
             bot=self.test_callback_context.bot
         )
